@@ -1,0 +1,12 @@
+runtime: go115
+
+inbound_services:
+  - warmup
+
+env_variables:
+  MARTINI_ENV: production
+
+handlers:
+  - url: .*
+    script: auto
+    secure: always
