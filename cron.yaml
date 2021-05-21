@@ -1,0 +1,4 @@
+cron:
+  - url: /cron/fetch
+    description: "fetch updates from the feeds"
+    schedule: "every 1 hours"

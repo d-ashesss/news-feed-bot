@@ -1,7 +1,9 @@
 package main
 
 import (
+	"github.com/go-martini/martini"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,7 +21,10 @@ func main() {
 	server := NewHttpServer()
 
 	server.Get("/", indexHandler)
-	server.Get("/_ah/warmupHandler", warmupHandler)
+	server.Get("/_ah/warmup", warmupHandler)
+	server.Group("/cron", func(r martini.Router) {
+		r.Get("/fetch", cronFetchHandler)
+	}, cronAuth)
 
 	go func() {
 		log.Printf("Starting HTTP server")
@@ -42,4 +47,14 @@ func indexHandler() string {
 
 func warmupHandler(log *log.Logger) {
 	log.Printf("warmup done")
+}
+
+func cronAuth(res http.ResponseWriter, r *http.Request) {
+	if head := r.Header.Get("X-Appengine-Cron"); head != "true" {
+		res.WriteHeader(http.StatusUnauthorized)
+	}
+}
+
+func cronFetchHandler() {
+	log.Printf("fetch done")
 }

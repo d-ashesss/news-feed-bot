@@ -49,12 +49,12 @@ func (s *Server) Run() error {
 
 func NewHttpServer() Server {
 	m := martini.Classic()
-	server := &http.Server{Addr: httpHost}
-
-	http.Handle("/", m)
-
+	s := &http.Server{
+		Addr:    httpHost,
+		Handler: m,
+	}
 	return Server{
-		Server:         server,
+		Server:         s,
 		ClassicMartini: m,
 		logger:         m.Injector.Get(reflect.TypeOf(&log.Logger{})).Interface().(*log.Logger),
 	}
