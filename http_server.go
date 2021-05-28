@@ -22,26 +22,31 @@ func init() {
 	httpHost = fmt.Sprintf(":%s", port)
 }
 
+type HttpServer interface {
+	Shutdown(ctx context.Context) error
+	ListenAndServe() error
+}
+
 type Server struct {
-	*http.Server
+	HttpServer
 	*martini.ClassicMartini
-	logger *log.Logger
+	Logger *log.Logger
 }
 
 func (s *Server) Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	if err := s.Server.Shutdown(ctx); err != nil {
-		s.logger.Printf("Server shutdown error: %s", err)
+	if err := s.HttpServer.Shutdown(ctx); err != nil {
+		s.Logger.Printf("Server shutdown error: %s", err)
 	}
 }
 
 func (s *Server) Run() error {
 	if martini.Env == martini.Dev {
-		s.logger.Printf("Listening on port %s", port)
-		s.logger.Printf("Open http://localhost:%s in the browser", port)
+		s.Logger.Printf("Listening on port %s", port)
+		s.Logger.Printf("Open http://localhost:%s in the browser", port)
 	}
-	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := s.HttpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil
@@ -54,8 +59,8 @@ func NewHttpServer() Server {
 		Handler: m,
 	}
 	return Server{
-		Server:         s,
+		HttpServer:     s,
 		ClassicMartini: m,
-		logger:         m.Injector.Get(reflect.TypeOf(&log.Logger{})).Interface().(*log.Logger),
+		Logger:         m.Injector.Get(reflect.TypeOf(&log.Logger{})).Interface().(*log.Logger),
 	}
 }
