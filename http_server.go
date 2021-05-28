@@ -52,13 +52,13 @@ func (s *Server) Run() error {
 	return nil
 }
 
-func NewHttpServer() Server {
+func NewHttpServer() *Server {
 	m := martini.Classic()
 	s := &http.Server{
 		Addr:    httpHost,
 		Handler: m,
 	}
-	return Server{
+	return &Server{
 		HttpServer:     s,
 		ClassicMartini: m,
 		Logger:         m.Injector.Get(reflect.TypeOf(&log.Logger{})).Interface().(*log.Logger),
