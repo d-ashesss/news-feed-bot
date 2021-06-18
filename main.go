@@ -1,7 +1,8 @@
 package main
 
 import (
-	"NewsFeedBot/bot"
+	"github.com/d-ashesss/news-feed-bot/bot"
+	"github.com/d-ashesss/news-feed-bot/http"
 	"log"
 	"os"
 )
@@ -13,7 +14,7 @@ func init() {
 }
 
 func main() {
-	httpServer := NewHttpServer()
+	httpServer := http.NewServer()
 	app := NewApp(httpServer)
 
 	b, err := bot.New()

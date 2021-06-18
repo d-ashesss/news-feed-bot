@@ -27,6 +27,3 @@
 # IntelliJ project files
 .idea
 *.iml
-
-# dev HTTP requests
-http

@@ -1,4 +1,0 @@
-###
-GET {{host}}/cron/fetch
-X-Appengine-Cron: true
-

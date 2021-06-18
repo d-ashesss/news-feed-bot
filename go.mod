@@ -1,4 +1,4 @@
-module NewsFeedBot
+module github.com/d-ashesss/news-feed-bot
 
 go 1.15
 

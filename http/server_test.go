@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ func NewServerTest(initialState bool) *ServerTest {
 	state := &StateSever{Running: initialState}
 	buffer := bytes.NewBufferString("")
 	logger := log.New(buffer, "", 0)
-	server := &Server{HttpServer: state, Logger: logger}
+	server := &Server{StoppableListener: state, Logger: logger}
 	return &ServerTest{
 		state:     state,
 		server:    server,

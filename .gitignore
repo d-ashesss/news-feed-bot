@@ -3,6 +3,3 @@
 # IntelliJ project files
 .idea
 *.iml
-
-# dev HTTP client private config
-/http/http-client.private.env.json
