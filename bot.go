@@ -10,24 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 )
-
-var (
-	projectID, baseURL string
-)
-
-func init() {
-	projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
-	baseURL = os.Getenv("APP_BASE_URL")
-	if len(baseURL) == 0 {
-		if len(projectID) > 0 {
-			baseURL = "https://" + projectID + ".appspot.com"
-		} else {
-			baseURL = "http://localhost"
-		}
-	}
-}
 
 func (a *App) SetBot(bot *bot.Bot) error {
 	if bot == nil {
@@ -35,9 +18,9 @@ func (a *App) SetBot(bot *bot.Bot) error {
 	}
 	p, err := getBotWebhookPath(bot)
 	if err != nil {
-		p, err = createBotWebhookPath(bot)
+		p, err = createBotWebhookPath(a.Config.BaseURL, bot)
 		if err != nil {
-			return errors.New(fmt.Sprintf("unable to create webhook: %v", err))
+			return fmt.Errorf("unable to create webhook: %v", err)
 		}
 	}
 	a.Bot = bot
@@ -58,12 +41,12 @@ func getBotWebhookPath(bot *bot.Bot) (string, error) {
 	return parts.Path, nil
 }
 
-func createBotWebhookPath(bot *bot.Bot) (string, error) {
+func createBotWebhookPath(baseURL string, bot *bot.Bot) (string, error) {
 	p := "/update/" + uuid.NewString()
 	if err := bot.SetWebhookURL(baseURL + p); err != nil {
-		return "", errors.New(fmt.Sprintf("unable to set webhook: %v", err))
+		return "", fmt.Errorf("unable to set webhook: %v", err)
 	}
-	log.Printf("Created new TG webhook %q", baseURL+p)
+	log.Printf("[bot] Created new TG webhook %q", baseURL+p)
 	return p, nil
 }
 

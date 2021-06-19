@@ -7,5 +7,5 @@ func (a *App) handleIndex() string {
 }
 
 func (a *App) handleWarmup(log *log.Logger) {
-	log.Printf("warmup done")
+	log.Printf("[web] warmup done")
 }

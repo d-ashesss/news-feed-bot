@@ -43,6 +43,7 @@ func (t *AppTest) Request(method string, url string, body io.Reader, headers map
 }
 
 func NewAppTest() *AppTest {
+	config := Config{}
 	handler := martini.Classic()
 	testServer := httptest.NewUnstartedServer(handler)
 	buffer := bytes.NewBufferString("")
@@ -54,6 +55,6 @@ func NewAppTest() *AppTest {
 		httpServer:     httpServer,
 		logger:         logger,
 		logBuffer:      buffer,
-		app:            NewApp(httpServer),
+		app:            NewApp(config, httpServer),
 	}
 }

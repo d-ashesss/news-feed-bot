@@ -6,22 +6,9 @@ import (
 	"github.com/go-martini/martini"
 	"log"
 	"net/http"
-	"os"
 	"reflect"
 	"time"
 )
-
-var (
-	port, httpHost string
-)
-
-func init() {
-	port = os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	httpHost = fmt.Sprintf(":%s", port)
-}
 
 type StoppableListener interface {
 	Shutdown(ctx context.Context) error
@@ -43,20 +30,16 @@ func (s *Server) Shutdown() {
 }
 
 func (s *Server) Run() error {
-	if martini.Env == martini.Dev {
-		s.Logger.Printf("Listening on port %s", port)
-		s.Logger.Printf("Open http://localhost:%s in the browser", port)
-	}
 	if err := s.StoppableListener.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil
 }
 
-func NewServer() *Server {
+func NewServer(port string) *Server {
 	m := martini.Classic()
 	s := &http.Server{
-		Addr:    httpHost,
+		Addr:    fmt.Sprintf(":%s", port),
 		Handler: m,
 	}
 	return &Server{

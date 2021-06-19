@@ -3,17 +3,10 @@ package bot
 import (
 	"errors"
 	"gopkg.in/tucnak/telebot.v2"
-	"os"
 	"strings"
 )
 
-var token string
-
-func init() {
-	token = os.Getenv("TG_TOKEN")
-}
-
-func New() (*Bot, error) {
+func New(token string) (*Bot, error) {
 	bot, err := telebot.NewBot(telebot.Settings{
 		Token: token,
 	})
@@ -52,6 +45,10 @@ func (b *Bot) SetWebhookURL(u string) error {
 		return err
 	}
 	return nil
+}
+
+func (b *Bot) GetName() string {
+	return GetUserName(b.Me)
 }
 
 func GetUserName(user *telebot.User) string {
