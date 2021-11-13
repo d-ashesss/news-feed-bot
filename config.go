@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/d-ashesss/news-feed-bot/secretmanager"
+	"log"
 	"os"
 )
 
@@ -17,7 +18,10 @@ func loadConfig(ctx context.Context, projectID string, secretManager *secretmana
 	var ok bool
 	telegramToken, ok = os.LookupEnv("TELEGRAM_TOKEN")
 	if !ok && secretManager != nil {
-		telegramToken, _ = secretManager.GetSecret(ctx, "telegram-bot-token")
+		var err error
+		if telegramToken, err = secretManager.GetSecret(ctx, "telegram-bot-token"); err != nil {
+			log.Printf("[config] secretManager.GetSecret: %v", err)
+		}
 	}
 
 	baseURL := os.Getenv("APP_BASE_URL")
