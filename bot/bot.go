@@ -4,11 +4,13 @@ import (
 	"errors"
 	"gopkg.in/tucnak/telebot.v2"
 	"strings"
+	"time"
 )
 
 func New(token string) (*Bot, error) {
 	bot, err := telebot.NewBot(telebot.Settings{
-		Token: token,
+		Token:  token,
+		Poller: &telebot.LongPoller{Timeout: 10 * time.Second},
 	})
 	if err != nil {
 		return nil, err
@@ -45,6 +47,10 @@ func (b *Bot) SetWebhookURL(u string) error {
 		return err
 	}
 	return nil
+}
+
+func (b *Bot) RemoveWebhook() error {
+	return b.Bot.RemoveWebhook()
 }
 
 func (b *Bot) GetName() string {

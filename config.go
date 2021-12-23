@@ -8,9 +8,11 @@ import (
 )
 
 type Config struct {
-	TelegramToken string
-	BaseURL       string
-	WebPort       string
+	TelegramToken   string
+	BaseURL         string
+	WebPort         string
+	BotWebhookMode  bool
+	BotResetWebhook bool
 }
 
 func loadConfig(ctx context.Context, projectID string, secretManager *secretmanager.SecretManager) Config {
@@ -35,9 +37,14 @@ func loadConfig(ctx context.Context, projectID string, secretManager *secretmana
 
 	WebPort := os.Getenv("PORT")
 
+	_, BotWebhookMode := os.LookupEnv("BOT_WEBHOOK_MODE")
+	_, BotResetWebhook := os.LookupEnv("BOT_RESET_WEBHOOK")
+
 	return Config{
-		TelegramToken: telegramToken,
-		BaseURL:       baseURL,
-		WebPort:       WebPort,
+		TelegramToken:   telegramToken,
+		BaseURL:         baseURL,
+		WebPort:         WebPort,
+		BotWebhookMode:  BotWebhookMode,
+		BotResetWebhook: BotResetWebhook,
 	}
 }

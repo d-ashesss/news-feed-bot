@@ -34,6 +34,13 @@ func (a *App) Run() {
 		signals <- syscall.SIGQUIT
 	}()
 
+	if !a.Config.BotWebhookMode {
+		go func() {
+			log.Printf("[app] Starting TG Bot")
+			a.Bot.Start()
+		}()
+	}
+
 	sig := <-signals
 	log.Printf("[app] Received signal %s", sig)
 	log.Printf("[app] Stopping HTTP server")

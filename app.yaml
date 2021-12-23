@@ -5,6 +5,7 @@ inbound_services:
 
 env_variables:
   MARTINI_ENV: production
+  BOT_WEBHOOK_MODE: 1
 
 handlers:
   - url: .*

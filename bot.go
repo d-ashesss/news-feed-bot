@@ -16,15 +16,26 @@ func (a *App) SetBot(bot *bot.Bot) error {
 	if bot == nil {
 		return errors.New("invalid bot instance")
 	}
-	p, err := getBotWebhookPath(bot)
-	if err != nil {
-		p, err = createBotWebhookPath(a.Config.BaseURL, bot)
+	if a.Config.BotResetWebhook {
+		if err := bot.RemoveWebhook(); err != nil {
+			return fmt.Errorf("unable to remove webhook: %v", err)
+		}
+	}
+	if a.Config.BotWebhookMode {
+		p, err := getBotWebhookPath(bot)
 		if err != nil {
-			return fmt.Errorf("unable to create webhook: %v", err)
+			p, err = createBotWebhookPath(a.Config.BaseURL, bot)
+			if err != nil {
+				return fmt.Errorf("unable to create webhook: %v", err)
+			}
+		}
+		a.HttpServer.Post(p, a.handleBotUpdate)
+	} else {
+		if err := bot.RemoveWebhook(); err != nil {
+			return fmt.Errorf("unable to remove webhook: %v", err)
 		}
 	}
 	a.Bot = bot
-	a.HttpServer.Post(p, a.handleBotUpdate)
 	a.Bot.Handle(telebot.OnText, a.handleBotMessage)
 	return nil
 }
