@@ -1,15 +1,21 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/d-ashesss/news-feed-bot/bot"
+	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/google/uuid"
 	"gopkg.in/tucnak/telebot.v2"
 	"log"
 	"net/http"
 	"net/url"
+)
+
+const (
+	BotCtxUser = "user"
 )
 
 func (a *App) SetBot(bot *bot.Bot) error {
@@ -29,14 +35,17 @@ func (a *App) SetBot(bot *bot.Bot) error {
 				return fmt.Errorf("unable to create webhook: %v", err)
 			}
 		}
-		a.HttpServer.Post(p, a.handleBotUpdate)
+		a.HttpServer.Post(p, a.botHandleWebhookUpdate)
 	} else {
 		if err := bot.RemoveWebhook(); err != nil {
 			return fmt.Errorf("unable to remove webhook: %v", err)
 		}
 	}
 	a.Bot = bot
-	a.Bot.Handle(telebot.OnText, a.handleBotMessage)
+	botCtx := context.TODO()
+	a.Bot.Handle(telebot.OnText, a.botHandleMessage(botCtx, a.botHandleTextMessage))
+	a.Bot.Handle("/start", a.botHandleMessage(botCtx, a.botHandleStart))
+	a.Bot.Handle("/menu", a.botHandleMessage(botCtx, a.botHandleMenu))
 	return nil
 }
 
@@ -61,7 +70,7 @@ func createBotWebhookPath(baseURL string, bot *bot.Bot) (string, error) {
 	return p, nil
 }
 
-func (a *App) handleBotUpdate(res http.ResponseWriter, r *http.Request) {
+func (a *App) botHandleWebhookUpdate(res http.ResponseWriter, r *http.Request) {
 	if a.Bot == nil {
 		res.WriteHeader(500)
 		return
@@ -76,11 +85,76 @@ func (a *App) handleBotUpdate(res http.ResponseWriter, r *http.Request) {
 	a.Bot.ProcessUpdate(update)
 }
 
-func (a *App) handleBotMessage(m *telebot.Message) {
-	log.Printf("[bot] Incoiming message from %s: %q", bot.GetUserName(m.Sender), m.Text)
-	if m.Text == "/start" {
-		if _, err := a.Bot.Send(m.Sender, "Welcome 🎉"); err != nil {
-			log.Printf("[bot] Failed to reply: %v", err)
-		}
+// botHandleMessage initializes common middleware stack to handle TG message
+func (a *App) botHandleMessage(ctx context.Context, h func(ctx context.Context, m *telebot.Message)) func(m *telebot.Message) {
+	return botMessageHandlerWithContext(
+		ctx,
+		h,
+		a.botMiddlewareMessageGetUser,
+		a.botMiddlewareMessageLogMessage,
+	)
+}
+
+// botMessageHandlerWithContext adapts telebot handler to the form `func(ctx context.Context, m *telebot.Message)` allowing to pass context.
+// middleware in stack will be executed in LIFO order
+func botMessageHandlerWithContext(
+	ctx context.Context,
+	handler func(ctx context.Context, m *telebot.Message),
+	stack ...func(func(ctx context.Context, m *telebot.Message)) func(ctx context.Context, m *telebot.Message),
+) func(m *telebot.Message) {
+	next := handler
+	for _, fn := range stack {
+		next = fn(next)
 	}
+	return func(m *telebot.Message) {
+		next(ctx, m)
+	}
+}
+
+// botMiddlewareMessageLogMessage logs incoming message
+func (a *App) botMiddlewareMessageLogMessage(next func(ctx context.Context, m *telebot.Message)) func(ctx context.Context, m *telebot.Message) {
+	return func(ctx context.Context, m *telebot.Message) {
+		log.Printf("[bot] Incoiming message from %s: %q", bot.GetUserName(m.Sender), m.Text)
+
+		next(ctx, m)
+	}
+}
+
+// botMiddlewareMessageGetUser loads existing model.User or creating a new one
+func (a *App) botMiddlewareMessageGetUser(next func(ctx context.Context, m *telebot.Message)) func(ctx context.Context, m *telebot.Message) {
+	return func(ctx context.Context, m *telebot.Message) {
+		user, err := a.UserModel.GetByTelegramId(ctx, m.Sender.ID)
+		if err != nil {
+			log.Printf("[bot] No user for TG ID %d", m.Sender.ID)
+			user = model.NewUser(m.Sender.ID)
+			if err := a.UserModel.Create(ctx, user); err != nil {
+				log.Printf("[bot] Failed to create user: %q", err)
+				return
+			} else {
+				log.Printf("[bot] Created user %q", user.Id)
+			}
+		} else {
+			log.Printf("[bot] Found user %q with TG ID %d", user.Id, user.TelegramId)
+		}
+
+		ctx = context.WithValue(ctx, BotCtxUser, user)
+		next(ctx, m)
+	}
+}
+
+func (a *App) botHandleStart(ctx context.Context, m *telebot.Message) {
+	user := ctx.Value(BotCtxUser).(*model.User)
+	if _, err := a.Bot.Send(m.Sender, fmt.Sprintf("Welcome, %q 🎉", user.Id)); err != nil {
+		log.Printf("[bot] botHandleStart() Failed to reply: %v", err)
+	}
+}
+
+func (a *App) botHandleMenu(ctx context.Context, m *telebot.Message) {
+	user := ctx.Value(BotCtxUser).(*model.User)
+	if _, err := a.Bot.Send(m.Sender, fmt.Sprintf("Your menu, %q 🗒", user.Id)); err != nil {
+		log.Printf("[bot] botHandleMenu() Failed to reply: %v", err)
+	}
+}
+
+func (a *App) botHandleTextMessage(_ context.Context, _ *telebot.Message) {
 }
