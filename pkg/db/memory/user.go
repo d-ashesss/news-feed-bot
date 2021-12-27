@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // UserStore is a dummy implementation of model.UserStore interface for testing purposes.
@@ -23,6 +24,7 @@ func (us *UserStore) Create(_ context.Context, u interface{}) (string, error) {
 	us.Lock()
 	defer us.Unlock()
 
+	rand.Seed(time.Now().UnixNano())
 	id := rand.Int63()
 	idStr := strconv.FormatInt(id, 16)
 
