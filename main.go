@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/d-ashesss/news-feed-bot/bot"
 	"github.com/d-ashesss/news-feed-bot/http"
+	"github.com/d-ashesss/news-feed-bot/pkg/db/memory"
+	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/d-ashesss/news-feed-bot/secretmanager"
 	"log"
 	"os"
@@ -31,7 +33,11 @@ func main() {
 	config := loadConfig(ctx, projectID, secretManager)
 
 	httpServer := http.NewServer(config.WebPort)
-	app := NewApp(config, httpServer)
+
+	userStore := memory.NewUserStore()
+	userModel := model.NewUserModel(userStore)
+
+	app := NewApp(config, httpServer, userModel)
 
 	b, err := bot.New(config.TelegramToken)
 	if err != nil {

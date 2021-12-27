@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/d-ashesss/news-feed-bot/bot"
 	"github.com/d-ashesss/news-feed-bot/http"
+	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/go-martini/martini"
 	"log"
 	"os"
@@ -14,6 +15,7 @@ type App struct {
 	Config     Config
 	HttpServer *http.Server
 	Bot        *bot.Bot
+	UserModel  *model.UserModel
 }
 
 func (a *App) Run() {
@@ -48,10 +50,11 @@ func (a *App) Run() {
 	log.Printf("[app] Gracefully exiting")
 }
 
-func NewApp(config Config, httpServer *http.Server) *App {
+func NewApp(config Config, httpServer *http.Server, userModel *model.UserModel) *App {
 	app := &App{
 		Config:     config,
 		HttpServer: httpServer,
+		UserModel:  userModel,
 	}
 
 	app.HttpServer.Get("/", app.handleIndex)
