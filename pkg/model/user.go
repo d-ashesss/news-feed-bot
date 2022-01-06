@@ -7,7 +7,7 @@ import (
 
 // User represents a user entity
 type User struct {
-	ID         string
+	ID         string `firestore:",omitempty"`
 	TelegramID int
 }
 

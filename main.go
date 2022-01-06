@@ -1,10 +1,12 @@
 package main
 
 import (
+	"cloud.google.com/go/firestore"
 	"context"
 	"github.com/d-ashesss/news-feed-bot/bot"
 	"github.com/d-ashesss/news-feed-bot/http"
-	"github.com/d-ashesss/news-feed-bot/pkg/db/memory"
+	firestoreDb "github.com/d-ashesss/news-feed-bot/pkg/db/firestore"
+	memoryDb "github.com/d-ashesss/news-feed-bot/pkg/db/memory"
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/d-ashesss/news-feed-bot/secretmanager"
 	"log"
@@ -32,9 +34,18 @@ func main() {
 
 	config := loadConfig(ctx, projectID, secretManager)
 
+	var userStore model.UserStore
+	fstore, err := firestore.NewClient(ctx, projectID)
+	if err != nil {
+		log.Printf("[main] Failed to init Firestore: %v", err)
+		userStore = memoryDb.NewUserStore()
+	} else {
+		defer func() { _ = fstore.Close() }()
+		userStore = firestoreDb.NewUserStore(fstore)
+	}
+
 	httpServer := http.NewServer(config.WebPort)
 
-	userStore := memory.NewUserStore()
 	userModel := model.NewUserModel(userStore)
 
 	app := NewApp(config, httpServer, userModel)
