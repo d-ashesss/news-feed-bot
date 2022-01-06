@@ -40,9 +40,9 @@ func (us *UserStore) Get(_ context.Context, id string, u interface{}) error {
 	return fmt.Errorf("user not found")
 }
 
-func (us *UserStore) GetByTelegramId(_ context.Context, telegramId int, u interface{}) (string, error) {
+func (us *UserStore) GetByTelegramID(_ context.Context, telegramID int, u interface{}) (string, error) {
 	for id, o := range us.users {
-		if getField(o, "TelegramId").(int) == telegramId {
+		if getField(o, "TelegramID").(int) == telegramID {
 			copyObject(o, u)
 			return id, nil
 		}

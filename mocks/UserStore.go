@@ -63,7 +63,7 @@ func (_m *UserStore) Get(ctx context.Context, id string, u interface{}) error {
 }
 
 // GetByTelegramId provides a mock function with given fields: ctx, telegramId, u
-func (_m *UserStore) GetByTelegramId(ctx context.Context, telegramId int, u interface{}) (string, error) {
+func (_m *UserStore) GetByTelegramID(ctx context.Context, telegramId int, u interface{}) (string, error) {
 	ret := _m.Called(ctx, telegramId, u)
 
 	var r0 string
