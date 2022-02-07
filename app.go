@@ -12,10 +12,11 @@ import (
 )
 
 type App struct {
-	Config     Config
-	HttpServer *http.Server
-	Bot        *bot.Bot
-	UserModel  *model.UserModel
+	Config        Config
+	HttpServer    *http.Server
+	Bot           *bot.Bot
+	UserModel     *model.UserModel
+	CategoryModel *model.CategoryModel
 }
 
 func (a *App) Run() {
@@ -50,11 +51,17 @@ func (a *App) Run() {
 	log.Printf("[app] Gracefully exiting")
 }
 
-func NewApp(config Config, httpServer *http.Server, userModel *model.UserModel) *App {
+func NewApp(
+	config Config,
+	httpServer *http.Server,
+	userModel *model.UserModel,
+	categoryModel *model.CategoryModel,
+) *App {
 	app := &App{
-		Config:     config,
-		HttpServer: httpServer,
-		UserModel:  userModel,
+		Config:        config,
+		HttpServer:    httpServer,
+		UserModel:     userModel,
+		CategoryModel: categoryModel,
 	}
 
 	app.HttpServer.Get("/", app.handleIndex)

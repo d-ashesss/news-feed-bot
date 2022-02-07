@@ -6,7 +6,6 @@ import (
 	"github.com/d-ashesss/news-feed-bot/bot"
 	"github.com/d-ashesss/news-feed-bot/http"
 	firestoreDb "github.com/d-ashesss/news-feed-bot/pkg/db/firestore"
-	memoryDb "github.com/d-ashesss/news-feed-bot/pkg/db/memory"
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/d-ashesss/news-feed-bot/secretmanager"
 	"log"
@@ -34,21 +33,22 @@ func main() {
 
 	config := loadConfig(ctx, projectID, secretManager)
 
+	var categoryStore model.CategoryStore
 	var userStore model.UserStore
 	fstore, err := firestore.NewClient(ctx, projectID)
 	if err != nil {
-		log.Printf("[main] Failed to init Firestore: %v", err)
-		userStore = memoryDb.NewUserStore()
-	} else {
-		defer func() { _ = fstore.Close() }()
-		userStore = firestoreDb.NewUserStore(fstore)
+		log.Fatalf("[main] Failed to init Firestore: %v", err)
 	}
+	defer func() { _ = fstore.Close() }()
+	userStore = firestoreDb.NewUserStore(fstore)
+	categoryStore = firestoreDb.NewCategoryStore(fstore)
 
 	httpServer := http.NewServer(config.WebPort)
 
 	userModel := model.NewUserModel(userStore)
+	categoryModel := model.NewCategoryModel(categoryStore)
 
-	app := NewApp(config, httpServer, userModel)
+	app := NewApp(config, httpServer, userModel, categoryModel)
 
 	b, err := bot.New(config.TelegramToken)
 	if err != nil {
