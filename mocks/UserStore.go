@@ -62,20 +62,20 @@ func (_m *UserStore) Get(ctx context.Context, id string, u interface{}) error {
 	return r0
 }
 
-// GetByTelegramId provides a mock function with given fields: ctx, telegramId, u
-func (_m *UserStore) GetByTelegramID(ctx context.Context, telegramId int, u interface{}) (string, error) {
-	ret := _m.Called(ctx, telegramId, u)
+// GetByTelegramID provides a mock function with given fields: ctx, telegramID, u
+func (_m *UserStore) GetByTelegramID(ctx context.Context, telegramID int, u interface{}) (string, error) {
+	ret := _m.Called(ctx, telegramID, u)
 
 	var r0 string
 	if rf, ok := ret.Get(0).(func(context.Context, int, interface{}) string); ok {
-		r0 = rf(ctx, telegramId, u)
+		r0 = rf(ctx, telegramID, u)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, int, interface{}) error); ok {
-		r1 = rf(ctx, telegramId, u)
+		r1 = rf(ctx, telegramID, u)
 	} else {
 		r1 = ret.Error(1)
 	}

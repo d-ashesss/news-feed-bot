@@ -5,20 +5,20 @@ import (
 	"fmt"
 )
 
-// User represents a user entity
+// User represents a user entity.
 type User struct {
 	ID         string `firestore:",omitempty"`
 	TelegramID int
 }
 
-// NewUser initializes new User
+// NewUser initializes new User.
 func NewUser(TelegramID int) *User {
 	return &User{
 		TelegramID: TelegramID,
 	}
 }
 
-// UserStore is an interface wrapper for a DB engine
+// UserStore is an interface wrapper for a DB engine.
 type UserStore interface {
 	Create(ctx context.Context, u interface{}) (string, error)
 	Get(ctx context.Context, id string, u interface{}) error
@@ -26,12 +26,12 @@ type UserStore interface {
 	Delete(ctx context.Context, id string) error
 }
 
-// UserModel data model for User
+// UserModel data model for User.
 type UserModel struct {
 	db UserStore
 }
 
-// NewUserModel initializes UserModel
+// NewUserModel initializes UserModel.
 func NewUserModel(db UserStore) *UserModel {
 	return &UserModel{db: db}
 }
