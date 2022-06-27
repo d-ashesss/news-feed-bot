@@ -2,43 +2,49 @@ package firestore
 
 import (
 	"cloud.google.com/go/firestore"
+	fst "cloud.google.com/go/firestore"
 	"context"
+	"github.com/d-ashesss/news-feed-bot/pkg/model"
+	"github.com/jschoedt/go-firestorm"
 )
 
-const CategoryCollection = "Categories"
-
-//var CategoryNotFound = errors.New("user not found")
-
-type CategoryStore struct {
-	client *firestore.Client
+type CategoryModel struct {
+	client *firestorm.FSClient
 }
 
-func NewCategoryStore(client *firestore.Client) *CategoryStore {
-	return &CategoryStore{client: client}
+// NewCategoryModel initializes Firestore implementation of model.CategoryModel.
+func NewCategoryModel(c *fst.Client) model.CategoryModel {
+	return &CategoryModel{client: firestorm.New(c, "ID", "")}
 }
 
-func (us *CategoryStore) Create(ctx context.Context, u interface{}) (string, error) {
-	doc, _, err := us.client.Collection(CategoryCollection).Add(ctx, u)
-	if err != nil {
+func (m CategoryModel) Create(ctx context.Context, c *model.Category) (string, error) {
+	if err := m.req().CreateEntities(ctx, c)(); err != nil {
 		return "", err
 	}
-	return doc.ID, nil
+	return m.req().GetID(c), nil
 }
 
-func (us *CategoryStore) Get(ctx context.Context, id string, u interface{}) error {
-	snap, err := us.client.Collection(CategoryCollection).Doc(id).Get(ctx)
-	if err != nil {
-		return err
+func (m CategoryModel) Get(ctx context.Context, id string) (*model.Category, error) {
+	c := &model.Category{ID: id}
+	if _, err := m.req().GetEntities(ctx, c)(); err != nil {
+		return nil, err
 	}
-	if err := snap.DataTo(u); err != nil {
-		return err
-	}
-	return nil
+	return c, nil
 }
 
-func (us *CategoryStore) Delete(ctx context.Context, id string) error {
-	if _, err := us.client.Collection(CategoryCollection).Doc(id).Delete(ctx); err != nil {
-		return err
+func (m CategoryModel) GetAll(ctx context.Context) ([]model.Category, error) {
+	cats := make([]model.Category, 0)
+	q := m.req().ToCollection(model.Category{}).OrderBy("name", firestore.Asc)
+	if err := m.req().QueryEntities(ctx, q, &cats)(); err != nil {
+		return nil, err
 	}
-	return nil
+	return cats, nil
+}
+
+func (m CategoryModel) Delete(ctx context.Context, c *model.Category) error {
+	return m.req().DeleteEntities(ctx, c)()
+}
+
+func (m CategoryModel) req() *firestorm.Request {
+	return m.client.NewRequest()
 }

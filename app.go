@@ -16,7 +16,7 @@ type App struct {
 	HttpServer    *http.Server
 	Bot           *bot.Bot
 	UserModel     *model.UserModel
-	CategoryModel *model.CategoryModel
+	CategoryModel model.CategoryModel
 }
 
 func (a *App) Run() {
@@ -55,7 +55,7 @@ func NewApp(
 	config Config,
 	httpServer *http.Server,
 	userModel *model.UserModel,
-	categoryModel *model.CategoryModel,
+	categoryModel model.CategoryModel,
 ) *App {
 	app := &App{
 		Config:        config,

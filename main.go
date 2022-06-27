@@ -33,20 +33,17 @@ func main() {
 
 	config := loadConfig(ctx, projectID, secretManager)
 
-	var categoryStore model.CategoryStore
-	var userStore model.UserStore
 	fstore, err := firestore.NewClient(ctx, projectID)
 	if err != nil {
 		log.Fatalf("[main] Failed to init Firestore: %v", err)
 	}
 	defer func() { _ = fstore.Close() }()
-	userStore = firestoreDb.NewUserStore(fstore)
-	categoryStore = firestoreDb.NewCategoryStore(fstore)
 
 	httpServer := http.NewServer(config.WebPort)
 
+	userStore := firestoreDb.NewUserStore(fstore)
 	userModel := model.NewUserModel(userStore)
-	categoryModel := model.NewCategoryModel(categoryStore)
+	categoryModel := firestoreDb.NewCategoryModel(fstore)
 
 	app := NewApp(config, httpServer, userModel, categoryModel)
 
