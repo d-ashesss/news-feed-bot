@@ -28,6 +28,7 @@ func TestModel(t *testing.T) {
 	defer resetData(ctx, fso)
 
 	categoryModel := firestoreDb.NewCategoryModel(fsc)
+	subscriptionModel := firestoreDb.NewSubscriptionModel(fsc, categoryModel)
 
 	cat1 := model.NewCategory("Cat1")
 	if _, err := categoryModel.Create(ctx, cat1); err != nil {
@@ -42,6 +43,15 @@ func TestModel(t *testing.T) {
 		t.Fatalf("failed to create category %v: %v", cat3, err)
 	}
 
+	s1 := model.NewSubscriber("U1")
+	if _, err = subscriptionModel.CreateSubscriber(ctx, s1); err != nil {
+		t.Fatalf("failed to create subscriber %v: %v", s1, err)
+	}
+	s2 := model.NewSubscriber("U2")
+	if _, err = subscriptionModel.CreateSubscriber(ctx, s2); err != nil {
+		t.Fatalf("failed to create subscriber %v: %v", s2, err)
+	}
+
 	t.Run("CategoryModel", func(t *testing.T) {
 		cat4 := model.NewCategory("Cat4")
 		if _, err := categoryModel.Create(ctx, cat4); err != nil {
@@ -52,11 +62,11 @@ func TestModel(t *testing.T) {
 		t.Run("Get", func(t *testing.T) {
 			cat, err := categoryModel.Get(ctx, cat4.ID)
 			if err != nil {
-				t.Errorf("Get(%q): %v", cat4.ID, err)
+				t.Errorf("Get(%q): %v", cat4.Name, err)
 				return
 			}
 			if cat.ID != cat4.ID || cat.Name != cat4.Name {
-				t.Errorf("Get(%q): got %v, want %v", cat4.ID, cat, cat4)
+				t.Errorf("Get(%q): got %v, want %v", cat4.Name, cat, cat4)
 			}
 		})
 
@@ -74,13 +84,133 @@ func TestModel(t *testing.T) {
 
 		t.Run("Delete", func(t *testing.T) {
 			if err := categoryModel.Delete(ctx, cat4); err != nil {
-				t.Errorf("Delete(%q): %v", cat4.ID, err)
+				t.Errorf("Delete(%q): %v", cat4.Name, err)
 			}
 			_, err := categoryModel.Get(ctx, cat4.ID)
 			if _, ok := err.(firestorm.NotFoundError); !ok {
-				t.Errorf("Delete(): got %v, want NotFoundError for deleted category", err)
+				t.Errorf("Get(%q): got %v, want NotFoundError for deleted category", cat4.Name, err)
 				return
 			}
+		})
+	})
+
+	t.Run("SubscriptionModel", func(t *testing.T) {
+		t.Run("GetSubscriber", func(t *testing.T) {
+			s, err := subscriptionModel.GetSubscriber(ctx, s1.ID)
+			if err != nil {
+				t.Errorf("GetSubscriber(%q): %v", s1.UserID, err)
+				return
+			}
+			if s.UserID != s1.UserID {
+				t.Errorf("GetSubscriber(%q) = %q", s1.UserID, s.UserID)
+			}
+		})
+
+		t.Run("GetSubscriptionStatus", func(t *testing.T) {
+			subs, err := subscriptionModel.GetSubscriptionStatus(ctx, s1)
+			if err != nil {
+				t.Errorf("GetSubscriptionStatus(): %v", err)
+				return
+			}
+			wantNum := 3
+			if len(subs) != wantNum {
+				t.Errorf("GetSubscriptionStatus(): got %d categories, want %d", len(subs), wantNum)
+			}
+			for _, sub := range subs {
+				if sub.Subscribed {
+					t.Errorf("GetSubscriptionStatus(): %v: want unsubscribed", sub.Category.Name)
+				}
+				if sub.Unread > 0 {
+					t.Errorf("GetSubscriptionStatus(): %v: got %d unreads, want 0", sub.Category.Name, sub.Unread)
+				}
+			}
+		})
+
+		t.Run("Subscribe", func(t *testing.T) {
+			if err := subscriptionModel.Subscribe(ctx, s1, *cat1); err != nil {
+				t.Errorf("Subscribe(%q, %q): %v", s1.UserID, cat1.Name, err)
+			}
+			if err := subscriptionModel.Subscribe(ctx, s1, *cat2); err != nil {
+				t.Errorf("Subscribe(%q, %q): %v", s1.UserID, cat2.Name, err)
+			}
+			if err := subscriptionModel.Subscribe(ctx, s2, *cat1); err != nil {
+				t.Errorf("Subscribe(%q, %q): %v", s2.UserID, cat1.Name, err)
+			}
+			if err := subscriptionModel.Subscribe(ctx, s2, *cat3); err != nil {
+				t.Errorf("Subscribe(%q, %q): %v", s2.UserID, cat3.Name, err)
+			}
+
+			t.Run(s1.UserID, func(t *testing.T) {
+				if len(s1.Categories) != 2 {
+					t.Errorf("%q has %d categories, want 2", s1.UserID, len(s1.Categories))
+				}
+				subs, err := subscriptionModel.GetSubscriptionStatus(ctx, s1)
+				if err != nil {
+					t.Errorf("GetSubscriptionStatus(%q): %v", s1.UserID, err)
+					return
+				}
+				for _, sub := range subs {
+					if sub.Category.ID == cat1.ID && !sub.Subscribed {
+						t.Errorf("GetSubscriptionStatus(%q): %v: want subscribed", s1.UserID, sub.Category.Name)
+					}
+					if sub.Category.ID == cat2.ID && !sub.Subscribed {
+						t.Errorf("GetSubscriptionStatus(%q): %v: want subscribed", s1.UserID, sub.Category.Name)
+					}
+					if sub.Category.ID == cat3.ID && sub.Subscribed {
+						t.Errorf("GetSubscriptionStatus(%q): %v: want unsubscribed", s1.UserID, sub.Category.Name)
+					}
+				}
+			})
+
+			t.Run(s2.UserID, func(t *testing.T) {
+				if len(s2.Categories) != 2 {
+					t.Errorf("%q has %d categories, want 2", s2.UserID, len(s2.Categories))
+				}
+				subs, err := subscriptionModel.GetSubscriptionStatus(ctx, s2)
+				if err != nil {
+					t.Errorf("GetSubscriptionStatus(%q): %v", s2.UserID, err)
+					return
+				}
+				for _, sub := range subs {
+					if sub.Category.ID == cat1.ID && !sub.Subscribed {
+						t.Errorf("GetSubscriptionStatus(%q): %v: want subscribed", s2.UserID, sub.Category.Name)
+					}
+					if sub.Category.ID == cat2.ID && sub.Subscribed {
+						t.Errorf("GetSubscriptionStatus(%q): %v: want unsubscribed", s2.UserID, sub.Category.Name)
+					}
+					if sub.Category.ID == cat3.ID && !sub.Subscribed {
+						t.Errorf("GetSubscriptionStatus(%q): %v: want subscribed", s2.UserID, sub.Category.Name)
+					}
+				}
+			})
+		})
+
+		t.Run("Unsubscribe", func(t *testing.T) {
+			if err := subscriptionModel.Unsubscribe(ctx, s2, *cat3); err != nil {
+				t.Errorf("Unsubscribe(%q, %q): %v", s2.UserID, cat3.Name, err)
+			}
+
+			t.Run(s2.UserID, func(t *testing.T) {
+				if len(s2.Categories) != 1 {
+					t.Errorf("%q has %d categories, want 1", s2.UserID, len(s2.Categories))
+				}
+				subs, err := subscriptionModel.GetSubscriptionStatus(ctx, s2)
+				if err != nil {
+					t.Errorf("GetSubscriptionStatus(%q): %v", s2.UserID, err)
+					return
+				}
+				for _, sub := range subs {
+					if sub.Category.ID == cat1.ID && !sub.Subscribed {
+						t.Errorf("GetSubscriptionStatus(%q): %v: want subscribed", s2.UserID, sub.Category.Name)
+					}
+					if sub.Category.ID == cat2.ID && sub.Subscribed {
+						t.Errorf("GetSubscriptionStatus(%q): %v: want unsubscribed", s2.UserID, sub.Category.Name)
+					}
+					if sub.Category.ID == cat3.ID && sub.Subscribed {
+						t.Errorf("GetSubscriptionStatus(%q): %v: want unsubscribed", s2.UserID, sub.Category.Name)
+					}
+				}
+			})
 		})
 	})
 }
@@ -90,5 +220,11 @@ func resetData(ctx context.Context, fso *firestorm.FSClient) {
 	_ = fso.NewRequest().QueryEntities(ctx, fso.NewRequest().ToCollection(model.Category{}).Query, &cats)()
 	if err := fso.NewRequest().DeleteEntities(ctx, cats)(); err != nil {
 		log.Fatalf("resetData: failed to delete categories: %v", err)
+	}
+
+	sbs := make([]model.Subscriber, 0)
+	_ = fso.NewRequest().QueryEntities(ctx, fso.NewRequest().ToCollection(model.Subscriber{}).Query, &sbs)()
+	if err := fso.NewRequest().DeleteEntities(ctx, sbs)(); err != nil {
+		log.Fatalf("resetData: failed to delete subscriptions: %v", err)
 	}
 }
