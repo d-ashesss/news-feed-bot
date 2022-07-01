@@ -7,11 +7,13 @@ import (
 	"github.com/jschoedt/go-firestorm"
 )
 
+// subscriptionModel is a Firestore implementation of model.SubscriptionModel.
 type subscriptionModel struct {
-	fsc           *firestorm.FSClient
-	categoryModel model.CategoryModel
+	fsc           *firestorm.FSClient // fsc is a Firestore client.
+	categoryModel model.CategoryModel // categoryModel is an implementation of model.CategoryModel.
 }
 
+// NewSubscriptionModel initializes Firestore implementation of model.SubscriptionModel.
 func NewSubscriptionModel(c *fst.Client, categoryModel model.CategoryModel) model.SubscriptionModel {
 	return subscriptionModel{fsc: firestorm.New(c, "ID", ""), categoryModel: categoryModel}
 }
@@ -57,6 +59,7 @@ func (m subscriptionModel) Unsubscribe(ctx context.Context, s *model.Subscriber,
 	return nil
 }
 
+// Subscribed shows subscription status for a given model.Category.
 func (m subscriptionModel) Subscribed(ctx context.Context, s *model.Subscriber, c model.Category) (bool, error) {
 	sub, err := m.GetSubscriber(ctx, s.ID)
 	if err != nil {
@@ -86,6 +89,7 @@ func (m subscriptionModel) GetSubscriptionStatus(ctx context.Context, s *model.S
 	return subs, nil
 }
 
+// req is a shortcut to firestorm.FSClient.NewRequest().
 func (m subscriptionModel) req() *firestorm.Request {
 	return m.fsc.NewRequest()
 }

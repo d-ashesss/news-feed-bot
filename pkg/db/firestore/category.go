@@ -8,8 +8,9 @@ import (
 	"github.com/jschoedt/go-firestorm"
 )
 
+// categoryModel is a Firestore implementation of model.CategoryModel.
 type categoryModel struct {
-	fsc *firestorm.FSClient
+	fsc *firestorm.FSClient // fsc is a Firestore client.
 }
 
 // NewCategoryModel initializes Firestore implementation of model.CategoryModel.
@@ -45,6 +46,7 @@ func (m categoryModel) Delete(ctx context.Context, c *model.Category) error {
 	return m.req().DeleteEntities(ctx, c)()
 }
 
+// req is a shortcut to firestorm.FSClient.NewRequest().
 func (m categoryModel) req() *firestorm.Request {
 	return m.fsc.NewRequest()
 }
