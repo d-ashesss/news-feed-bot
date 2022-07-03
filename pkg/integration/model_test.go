@@ -28,6 +28,7 @@ func TestModel(t *testing.T) {
 	defer resetData(ctx, fso)
 
 	categoryModel := firestoreDb.NewCategoryModel(fsc)
+	updateModel := firestoreDb.NewUpdateModel(fsc)
 	subscriptionModel := firestoreDb.NewSubscriptionModel(fsc, categoryModel)
 
 	cat1 := model.NewCategory("Cat1")
@@ -89,6 +90,97 @@ func TestModel(t *testing.T) {
 			_, err := categoryModel.Get(ctx, cat4.ID)
 			if _, ok := err.(firestorm.NotFoundError); !ok {
 				t.Errorf("Get(%q): got %v, want NotFoundError for deleted category", cat4.Name, err)
+				return
+			}
+		})
+	})
+
+	t.Run("UpdateModel", func(t *testing.T) {
+		upTitle := "Cat1Up1"
+		t.Run("Create", func(t *testing.T) {
+			t.Run("invalid subscriber", func(t *testing.T) {
+				up := model.Update{Subscriber: nil, Category: cat1, Title: upTitle}
+				_, err := updateModel.Create(ctx, &up)
+				if err == nil {
+					t.Errorf("Create(%v): want error", up)
+					return
+				}
+			})
+
+			t.Run("invalid category", func(t *testing.T) {
+				up := model.Update{Subscriber: s1, Category: nil, Title: upTitle}
+				_, err := updateModel.Create(ctx, &up)
+				if err == nil {
+					t.Errorf("Create(%v): want error", up)
+					return
+				}
+			})
+
+			t.Run("valid update", func(t *testing.T) {
+				up := model.Update{Subscriber: s1, Category: cat1, Title: upTitle}
+				_, err := updateModel.Create(ctx, &up)
+				if err != nil {
+					t.Errorf("Create(%v): %v", up, err)
+					return
+				}
+				if len(up.ID) == 0 {
+					t.Errorf("Create(): want ID field to be set")
+				}
+			})
+		})
+
+		t.Run("GetFromCategory", func(t *testing.T) {
+			t.Run("invalid subscriber", func(t *testing.T) {
+				if _, err := updateModel.GetFromCategory(ctx, nil, cat2); err == nil {
+					t.Errorf("GetFromCategory(%q, %q): want error", s1.UserID, cat2.Name)
+					return
+				}
+			})
+
+			t.Run("invalid category", func(t *testing.T) {
+				if _, err := updateModel.GetFromCategory(ctx, s1, nil); err == nil {
+					t.Errorf("GetFromCategory(%q, %v): want error", s1.UserID, nil)
+					return
+				}
+			})
+
+			t.Run("category has no updates", func(t *testing.T) {
+				if _, err := updateModel.GetFromCategory(ctx, s1, cat2); err == nil {
+					t.Errorf("GetFromCategory(%q, %q): want error", s1.UserID, cat2.Name)
+					return
+				}
+			})
+
+			t.Run("subscriber has no updates", func(t *testing.T) {
+				if _, err := updateModel.GetFromCategory(ctx, s2, cat1); err == nil {
+					t.Errorf("GetFromCategory(%q, %q): want error", s2.UserID, cat1.Name)
+					return
+				}
+			})
+
+			t.Run("has update", func(t *testing.T) {
+				up, err := updateModel.GetFromCategory(ctx, s1, cat1)
+				if err != nil {
+					t.Errorf("GetFromCategory(%q, %q): %v", s1.UserID, cat1.Name, err)
+					return
+				}
+				if up.Title != upTitle {
+					t.Errorf("GetFromCategory(%q, %q): got %v, want %v", s1.UserID, cat1.Name, up.Title, upTitle)
+				}
+			})
+		})
+
+		t.Run("Delete", func(t *testing.T) {
+			up, err := updateModel.GetFromCategory(ctx, s1, cat1)
+			if err != nil {
+				t.Errorf("GetFromCategory(%q, %q): %v", s1.UserID, cat1.Name, err)
+				return
+			}
+			if err := updateModel.Delete(ctx, up); err != nil {
+				t.Errorf("Delete(%v): %v", up.Title, err)
+			}
+			if _, err = updateModel.GetFromCategory(ctx, s1, cat1); err == nil {
+				t.Errorf("GetFromCategory(%q, %q): want error for deleted update", s1.UserID, cat2.Name)
 				return
 			}
 		})
