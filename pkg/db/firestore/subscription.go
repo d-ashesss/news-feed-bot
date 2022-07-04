@@ -3,6 +3,7 @@ package firestore
 import (
 	fst "cloud.google.com/go/firestore"
 	"context"
+	"fmt"
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/jschoedt/go-firestorm"
 )
@@ -11,11 +12,16 @@ import (
 type subscriptionModel struct {
 	fsc           *firestorm.FSClient // fsc is a Firestore client.
 	categoryModel model.CategoryModel // categoryModel is an implementation of model.CategoryModel.
+	updateModel   model.UpdateModel   // updateModel is an implementation of model.UpdateModel.
 }
 
 // NewSubscriptionModel initializes Firestore implementation of model.SubscriptionModel.
-func NewSubscriptionModel(c *fst.Client, categoryModel model.CategoryModel) model.SubscriptionModel {
-	return subscriptionModel{fsc: firestorm.New(c, "ID", ""), categoryModel: categoryModel}
+func NewSubscriptionModel(c *fst.Client, categoryModel model.CategoryModel, updateModel model.UpdateModel) model.SubscriptionModel {
+	return subscriptionModel{
+		fsc:           firestorm.New(c, "ID", ""),
+		categoryModel: categoryModel,
+		updateModel:   updateModel,
+	}
 }
 
 func (m subscriptionModel) CreateSubscriber(ctx context.Context, s *model.Subscriber) (string, error) {
@@ -87,6 +93,24 @@ func (m subscriptionModel) GetSubscriptionStatus(ctx context.Context, s *model.S
 		}
 	}
 	return subs, nil
+}
+
+func (m subscriptionModel) AddUpdate(ctx context.Context, up model.Update) error {
+	if up.Category == nil {
+		return fmt.Errorf("invalid category")
+	}
+	catRef := m.req().ToRef(up.Category)
+	q := m.req().ToCollection(model.Subscriber{}).Where("categories", "array-contains", catRef)
+	var ss []model.Subscriber
+	if err := m.req().QueryEntities(ctx, q, &ss)(); err != nil {
+		return err
+	}
+	for _, s := range ss {
+		sup := up
+		sup.Subscriber = &s
+		_, _ = m.updateModel.Create(ctx, &sup)
+	}
+	return nil
 }
 
 // req is a shortcut to firestorm.FSClient.NewRequest().

@@ -21,4 +21,6 @@ type SubscriptionModel interface {
 	Unsubscribe(ctx context.Context, s *Subscriber, c Category) error
 	// GetSubscriptionStatus returns a list of all categories and their subscription status for a given Subscriber.
 	GetSubscriptionStatus(ctx context.Context, s *Subscriber) ([]Subscription, error)
+	// AddUpdate adds and update to each subscriber of a category. Update has to have its Category property set.
+	AddUpdate(ctx context.Context, up Update) error
 }

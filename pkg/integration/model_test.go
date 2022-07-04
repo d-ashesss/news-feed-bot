@@ -29,7 +29,7 @@ func TestModel(t *testing.T) {
 
 	categoryModel := firestoreDb.NewCategoryModel(fsc)
 	updateModel := firestoreDb.NewUpdateModel(fsc)
-	subscriptionModel := firestoreDb.NewSubscriptionModel(fsc, categoryModel)
+	subscriptionModel := firestoreDb.NewSubscriptionModel(fsc, categoryModel, updateModel)
 
 	cat1 := model.NewCategory("Cat1")
 	if _, err := categoryModel.Create(ctx, cat1); err != nil {
@@ -300,6 +300,65 @@ func TestModel(t *testing.T) {
 					}
 					if sub.Category.ID == cat3.ID && sub.Subscribed {
 						t.Errorf("GetSubscriptionStatus(%q): %v: want unsubscribed", s2.UserID, sub.Category.Name)
+					}
+				}
+			})
+		})
+
+		t.Run("AddUpdate", func(t *testing.T) {
+			t.Run("no category", func(t *testing.T) {
+				up := model.Update{Title: "No Cat"}
+				if err := subscriptionModel.AddUpdate(ctx, up); err == nil {
+					t.Errorf("AddUpdate(%q): want error", up.Title)
+				}
+			})
+			up1 := model.Update{Category: cat1, Title: "Cat1 Up2"}
+			if err := subscriptionModel.AddUpdate(ctx, up1); err != nil {
+				t.Errorf("AddUpdate(%q): %v", up1.Title, err)
+			}
+			up2 := model.Update{Category: cat1, Title: "Cat1 Up3"}
+			if err := subscriptionModel.AddUpdate(ctx, up2); err != nil {
+				t.Errorf("AddUpdate(%q): %v", up2.Title, err)
+			}
+			up3 := model.Update{Category: cat2, Title: "Cat2 Up1"}
+			if err := subscriptionModel.AddUpdate(ctx, up3); err != nil {
+				t.Errorf("AddUpdate(%q): %v", up3.Title, err)
+			}
+
+			t.Run(s1.UserID, func(t *testing.T) {
+				subs, err := subscriptionModel.GetSubscriptionStatus(ctx, s1)
+				if err != nil {
+					t.Errorf("GetSubscriptionStatus(%q): %v", s1.UserID, err)
+					return
+				}
+				for _, sub := range subs {
+					if sub.Category.ID == cat1.ID && sub.Unread != 2 {
+						t.Errorf("GetSubscriptionStatus(%q): %v: got %d unreads, want %d", s1.UserID, sub.Category.Name, sub.Unread, 2)
+					}
+					if sub.Category.ID == cat2.ID && sub.Unread != 1 {
+						t.Errorf("GetSubscriptionStatus(%q): %v: got %d unreads, want %d", s1.UserID, sub.Category.Name, sub.Unread, 1)
+					}
+					if sub.Category.ID == cat3.ID && sub.Unread != 0 {
+						t.Errorf("GetSubscriptionStatus(%q): %v: got %d unreads, want %d", s1.UserID, sub.Category.Name, sub.Unread, 0)
+					}
+				}
+			})
+
+			t.Run(s2.UserID, func(t *testing.T) {
+				subs, err := subscriptionModel.GetSubscriptionStatus(ctx, s2)
+				if err != nil {
+					t.Errorf("GetSubscriptionStatus(%q): %v", s2.UserID, err)
+					return
+				}
+				for _, sub := range subs {
+					if sub.Category.ID == cat1.ID && sub.Unread != 2 {
+						t.Errorf("GetSubscriptionStatus(%q): %v: got %d unreads, want %d", s2.UserID, sub.Category.Name, sub.Unread, 2)
+					}
+					if sub.Category.ID == cat2.ID && sub.Unread != 0 {
+						t.Errorf("GetSubscriptionStatus(%q): %v: got %d unreads, want %d", s2.UserID, sub.Category.Name, sub.Unread, 0)
+					}
+					if sub.Category.ID == cat3.ID && sub.Unread != 0 {
+						t.Errorf("GetSubscriptionStatus(%q): %v: got %d unreads, want %d", s2.UserID, sub.Category.Name, sub.Unread, 0)
 					}
 				}
 			})
