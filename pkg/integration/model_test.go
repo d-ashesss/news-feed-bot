@@ -170,6 +170,45 @@ func TestModel(t *testing.T) {
 			})
 		})
 
+		t.Run("GetCountInCategory", func(t *testing.T) {
+			t.Run("invalid subscriber", func(t *testing.T) {
+				if _, err := updateModel.GetCountInCategory(ctx, nil, cat2); err == nil {
+					t.Errorf("GetCountInCategory(%q, %q): want error", s1.UserID, cat2.Name)
+					return
+				}
+			})
+
+			t.Run("invalid category", func(t *testing.T) {
+				if _, err := updateModel.GetCountInCategory(ctx, s1, nil); err == nil {
+					t.Errorf("GetCountInCategory(%q, %v): want error", s1.UserID, nil)
+					return
+				}
+			})
+
+			t.Run("empty category", func(t *testing.T) {
+				wantCount := 0
+				count, err := updateModel.GetCountInCategory(ctx, s1, cat2)
+				if err != nil {
+					t.Errorf("GetCountInCategory(%q, %q): %v", s1.UserID, cat2.Name, err)
+					return
+				}
+				if count != wantCount {
+					t.Errorf("GetCountInCategory(%q, %q): got %d updates, want %d", s1.UserID, cat2.Name, count, wantCount)
+				}
+			})
+			t.Run("not empty category", func(t *testing.T) {
+				wantCount := 1
+				count, err := updateModel.GetCountInCategory(ctx, s1, cat1)
+				if err != nil {
+					t.Errorf("GetCountInCategory(%q, %q): %v", s1.UserID, cat1.Name, err)
+					return
+				}
+				if count != wantCount {
+					t.Errorf("GetCountInCategory(%q, %q): got %d updates, want %d", s1.UserID, cat1.Name, count, wantCount)
+				}
+			})
+		})
+
 		t.Run("Delete", func(t *testing.T) {
 			up, err := updateModel.GetFromCategory(ctx, s1, cat1)
 			if err != nil {

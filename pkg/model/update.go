@@ -20,6 +20,8 @@ type UpdateModel interface {
 	Create(ctx context.Context, c *Update) (string, error)
 	// GetFromCategory retrieves the oldest available update from selected Category for the Subscriber.
 	GetFromCategory(ctx context.Context, s *Subscriber, cat *Category) (*Update, error)
+	// GetCountInCategory retrieves the number of updates available in selected Category for the Subscriber.
+	GetCountInCategory(ctx context.Context, s *Subscriber, cat *Category) (int, error)
 	// Delete deletes an Update entity from the DB.
 	Delete(ctx context.Context, up *Update) error
 }

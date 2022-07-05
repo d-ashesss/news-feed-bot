@@ -53,6 +53,24 @@ func (m updateModel) GetFromCategory(ctx context.Context, s *model.Subscriber, c
 	return &ups[0], nil
 }
 
+func (m updateModel) GetCountInCategory(ctx context.Context, s *model.Subscriber, cat *model.Category) (int, error) {
+	if s == nil || len(s.ID) == 0 {
+		return 0, fmt.Errorf("invalid subscriber")
+	}
+	if cat == nil || len(cat.ID) == 0 {
+		return 0, fmt.Errorf("invalid category")
+	}
+	var ups []model.Update
+	catRef := m.req().ToRef(cat)
+	q := m.req().ToCollection(model.Update{Subscriber: s}).
+		Where("category", "==", catRef).
+		OrderBy("date", firestore.Asc)
+	if err := m.req().QueryEntities(ctx, q, &ups)(); err != nil {
+		return 0, err
+	}
+	return len(ups), nil
+}
+
 func (m updateModel) Delete(ctx context.Context, up *model.Update) error {
 	if err := m.req().DeleteEntities(ctx, up)(); err != nil {
 		return err

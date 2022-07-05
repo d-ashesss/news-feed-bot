@@ -87,9 +87,12 @@ func (m subscriptionModel) GetSubscriptionStatus(ctx context.Context, s *model.S
 	subs := make([]model.Subscription, len(cats))
 	for i := range cats {
 		subscribed, _ := m.Subscribed(ctx, s, cats[i])
+		unread, _ := m.updateModel.GetCountInCategory(ctx, s, &cats[i])
+
 		subs[i] = model.Subscription{
 			Category:   cats[i],
 			Subscribed: subscribed,
+			Unread:     unread,
 		}
 	}
 	return subs, nil
