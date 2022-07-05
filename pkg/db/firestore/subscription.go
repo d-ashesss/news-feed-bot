@@ -3,7 +3,6 @@ package firestore
 import (
 	fst "cloud.google.com/go/firestore"
 	"context"
-	"fmt"
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/jschoedt/go-firestorm"
 )
@@ -100,7 +99,7 @@ func (m subscriptionModel) GetSubscriptionStatus(ctx context.Context, s *model.S
 
 func (m subscriptionModel) AddUpdate(ctx context.Context, up model.Update) error {
 	if up.Category == nil {
-		return fmt.Errorf("invalid category")
+		return model.ErrInvalidCategory
 	}
 	catRef := m.req().ToRef(up.Category)
 	q := m.req().ToCollection(model.Subscriber{}).Where("categories", "array-contains", catRef)

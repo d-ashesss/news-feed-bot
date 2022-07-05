@@ -20,10 +20,10 @@ func NewUpdateModel(c *firestore.Client) model.UpdateModel {
 
 func (m updateModel) Create(ctx context.Context, up *model.Update) (string, error) {
 	if up.Subscriber == nil || len(up.Subscriber.ID) == 0 {
-		return "", fmt.Errorf("invalid subscriber")
+		return "", model.ErrInvalidSubscriber
 	}
 	if up.Category == nil || len(up.Category.ID) == 0 {
-		return "", fmt.Errorf("invalid category")
+		return "", model.ErrInvalidCategory
 	}
 	if err := m.req().CreateEntities(ctx, up)(); err != nil {
 		return "", err
@@ -33,10 +33,10 @@ func (m updateModel) Create(ctx context.Context, up *model.Update) (string, erro
 
 func (m updateModel) GetFromCategory(ctx context.Context, s *model.Subscriber, cat *model.Category) (*model.Update, error) {
 	if s == nil || len(s.ID) == 0 {
-		return nil, fmt.Errorf("invalid subscriber")
+		return nil, model.ErrInvalidSubscriber
 	}
 	if cat == nil || len(cat.ID) == 0 {
-		return nil, fmt.Errorf("invalid category")
+		return nil, model.ErrInvalidCategory
 	}
 	var ups []model.Update
 	catRef := m.req().ToRef(cat)
@@ -55,10 +55,10 @@ func (m updateModel) GetFromCategory(ctx context.Context, s *model.Subscriber, c
 
 func (m updateModel) GetCountInCategory(ctx context.Context, s *model.Subscriber, cat *model.Category) (int, error) {
 	if s == nil || len(s.ID) == 0 {
-		return 0, fmt.Errorf("invalid subscriber")
+		return 0, model.ErrInvalidSubscriber
 	}
 	if cat == nil || len(cat.ID) == 0 {
-		return 0, fmt.Errorf("invalid category")
+		return 0, model.ErrInvalidCategory
 	}
 	var ups []model.Update
 	catRef := m.req().ToRef(cat)

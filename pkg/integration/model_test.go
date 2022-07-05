@@ -100,18 +100,16 @@ func TestModel(t *testing.T) {
 		t.Run("Create", func(t *testing.T) {
 			t.Run("invalid subscriber", func(t *testing.T) {
 				up := model.Update{Subscriber: nil, Category: cat1, Title: upTitle}
-				_, err := updateModel.Create(ctx, &up)
-				if err == nil {
-					t.Errorf("Create(%v): want error", up)
+				if _, err := updateModel.Create(ctx, &up); err != model.ErrInvalidSubscriber {
+					t.Errorf("Create(%v): want ErrInvalidSubscriber, got %q", up, err)
 					return
 				}
 			})
 
 			t.Run("invalid category", func(t *testing.T) {
 				up := model.Update{Subscriber: s1, Category: nil, Title: upTitle}
-				_, err := updateModel.Create(ctx, &up)
-				if err == nil {
-					t.Errorf("Create(%v): want error", up)
+				if _, err := updateModel.Create(ctx, &up); err != model.ErrInvalidCategory {
+					t.Errorf("Create(%v): want ErrInvalidCategory, got %q", up, err)
 					return
 				}
 			})
@@ -131,15 +129,15 @@ func TestModel(t *testing.T) {
 
 		t.Run("GetFromCategory", func(t *testing.T) {
 			t.Run("invalid subscriber", func(t *testing.T) {
-				if _, err := updateModel.GetFromCategory(ctx, nil, cat2); err == nil {
-					t.Errorf("GetFromCategory(%q, %q): want error", s1.UserID, cat2.Name)
+				if _, err := updateModel.GetFromCategory(ctx, nil, cat2); err != model.ErrInvalidSubscriber {
+					t.Errorf("GetFromCategory(%v, %q): want ErrInvalidSubscriber, got %q", nil, cat2.Name, err)
 					return
 				}
 			})
 
 			t.Run("invalid category", func(t *testing.T) {
-				if _, err := updateModel.GetFromCategory(ctx, s1, nil); err == nil {
-					t.Errorf("GetFromCategory(%q, %v): want error", s1.UserID, nil)
+				if _, err := updateModel.GetFromCategory(ctx, s1, nil); err != model.ErrInvalidCategory {
+					t.Errorf("GetFromCategory(%q, %v): want ErrInvalidCategory, got %q", s1.UserID, nil, err)
 					return
 				}
 			})
@@ -172,15 +170,15 @@ func TestModel(t *testing.T) {
 
 		t.Run("GetCountInCategory", func(t *testing.T) {
 			t.Run("invalid subscriber", func(t *testing.T) {
-				if _, err := updateModel.GetCountInCategory(ctx, nil, cat2); err == nil {
-					t.Errorf("GetCountInCategory(%q, %q): want error", s1.UserID, cat2.Name)
+				if _, err := updateModel.GetCountInCategory(ctx, nil, cat2); err != model.ErrInvalidSubscriber {
+					t.Errorf("GetCountInCategory(%v, %q): want ErrInvalidSubscriber, got %q", nil, cat2.Name, err)
 					return
 				}
 			})
 
 			t.Run("invalid category", func(t *testing.T) {
-				if _, err := updateModel.GetCountInCategory(ctx, s1, nil); err == nil {
-					t.Errorf("GetCountInCategory(%q, %v): want error", s1.UserID, nil)
+				if _, err := updateModel.GetCountInCategory(ctx, s1, nil); err != model.ErrInvalidCategory {
+					t.Errorf("GetCountInCategory(%q, %v): want ErrInvalidCategory, got %q", s1.UserID, nil, err)
 					return
 				}
 			})
@@ -347,8 +345,8 @@ func TestModel(t *testing.T) {
 		t.Run("AddUpdate", func(t *testing.T) {
 			t.Run("no category", func(t *testing.T) {
 				up := model.Update{Title: "No Cat"}
-				if err := subscriptionModel.AddUpdate(ctx, up); err == nil {
-					t.Errorf("AddUpdate(%q): want error", up.Title)
+				if err := subscriptionModel.AddUpdate(ctx, up); err != model.ErrInvalidCategory {
+					t.Errorf("AddUpdate(%q): want ErrInvalidCategory error, got %q", up.Title, err)
 				}
 			})
 			up1 := model.Update{Category: cat1, Title: "Cat1 Up2"}
