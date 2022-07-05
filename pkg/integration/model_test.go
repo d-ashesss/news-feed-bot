@@ -11,6 +11,7 @@ import (
 	"github.com/jschoedt/go-firestorm"
 	"log"
 	"testing"
+	"time"
 )
 
 func TestModel(t *testing.T) {
@@ -52,6 +53,7 @@ func TestModel(t *testing.T) {
 	if _, err = subscriptionModel.CreateSubscriber(ctx, s2); err != nil {
 		t.Fatalf("failed to create subscriber %v: %v", s2, err)
 	}
+	var up1, up2, up3 model.Update
 
 	t.Run("CategoryModel", func(t *testing.T) {
 		cat4 := model.NewCategory("Cat4")
@@ -96,7 +98,7 @@ func TestModel(t *testing.T) {
 	})
 
 	t.Run("UpdateModel", func(t *testing.T) {
-		upTitle := "Cat1Up1"
+		upTitle := "Cat1Up0"
 		t.Run("Create", func(t *testing.T) {
 			t.Run("invalid subscriber", func(t *testing.T) {
 				up := model.Update{Subscriber: nil, Category: cat1, Title: upTitle}
@@ -143,15 +145,15 @@ func TestModel(t *testing.T) {
 			})
 
 			t.Run("category has no updates", func(t *testing.T) {
-				if _, err := updateModel.GetFromCategory(ctx, s1, cat2); err == nil {
-					t.Errorf("GetFromCategory(%q, %q): want error", s1.UserID, cat2.Name)
+				if _, err := updateModel.GetFromCategory(ctx, s1, cat2); err != model.ErrNoUpdatesAvailable {
+					t.Errorf("GetFromCategory(%q, %q): want ErrNoUpdateAvailable, got %q", s1.UserID, cat2.Name, err)
 					return
 				}
 			})
 
 			t.Run("subscriber has no updates", func(t *testing.T) {
-				if _, err := updateModel.GetFromCategory(ctx, s2, cat1); err == nil {
-					t.Errorf("GetFromCategory(%q, %q): want error", s2.UserID, cat1.Name)
+				if _, err := updateModel.GetFromCategory(ctx, s2, cat1); err != model.ErrNoUpdatesAvailable {
+					t.Errorf("GetFromCategory(%q, %q): want ErrNoUpdateAvailable, got %q", s2.UserID, cat1.Name, err)
 					return
 				}
 			})
@@ -216,8 +218,8 @@ func TestModel(t *testing.T) {
 			if err := updateModel.Delete(ctx, up); err != nil {
 				t.Errorf("Delete(%v): %v", up.Title, err)
 			}
-			if _, err = updateModel.GetFromCategory(ctx, s1, cat1); err == nil {
-				t.Errorf("GetFromCategory(%q, %q): want error for deleted update", s1.UserID, cat2.Name)
+			if _, err = updateModel.GetFromCategory(ctx, s1, cat1); err != model.ErrNoUpdatesAvailable {
+				t.Errorf("GetFromCategory(%q, %q): want ErrNoUpdateAvailable for deleted update, got %q", s1.UserID, cat2.Name, err)
 				return
 			}
 		})
@@ -349,15 +351,15 @@ func TestModel(t *testing.T) {
 					t.Errorf("AddUpdate(%q): want ErrInvalidCategory error, got %q", up.Title, err)
 				}
 			})
-			up1 := model.Update{Category: cat1, Title: "Cat1 Up2"}
+			up1 = model.Update{Category: cat1, Title: "Cat1 Up1", Date: time.Now()}
 			if err := subscriptionModel.AddUpdate(ctx, up1); err != nil {
 				t.Errorf("AddUpdate(%q): %v", up1.Title, err)
 			}
-			up2 := model.Update{Category: cat1, Title: "Cat1 Up3"}
+			up2 = model.Update{Category: cat1, Title: "Cat1 Up2", Date: time.Now()}
 			if err := subscriptionModel.AddUpdate(ctx, up2); err != nil {
 				t.Errorf("AddUpdate(%q): %v", up2.Title, err)
 			}
-			up3 := model.Update{Category: cat2, Title: "Cat2 Up1"}
+			up3 = model.Update{Category: cat2, Title: "Cat2 Up1", Date: time.Now()}
 			if err := subscriptionModel.AddUpdate(ctx, up3); err != nil {
 				t.Errorf("AddUpdate(%q): %v", up3.Title, err)
 			}
@@ -397,6 +399,46 @@ func TestModel(t *testing.T) {
 					if sub.Category.ID == cat3.ID && sub.Unread != 0 {
 						t.Errorf("GetSubscriptionStatus(%q): %v: got %d unreads, want %d", s2.UserID, sub.Category.Name, sub.Unread, 0)
 					}
+				}
+			})
+		})
+
+		t.Run("ShiftUpdate", func(t *testing.T) {
+			t.Run(up1.Title, func(t *testing.T) {
+				up, err := subscriptionModel.ShiftUpdate(ctx, s1, *cat1)
+				if err != nil {
+					t.Errorf("ShiftUpdate(%q, %q): %v", s1.UserID, cat1.Name, err)
+					return
+				}
+				if up.Title != up1.Title {
+					t.Errorf("ShiftUpdate(%q, %q): got %q, want %q", s1.UserID, cat1.Name, up.Title, up1.Title)
+				}
+			})
+			t.Run(up2.Title, func(t *testing.T) {
+				up, err := subscriptionModel.ShiftUpdate(ctx, s1, *cat1)
+				if err != nil {
+					t.Errorf("ShiftUpdate(%q, %q): %v", s1.UserID, cat1.Name, err)
+					return
+				}
+				if up.Title != up2.Title {
+					t.Errorf("ShiftUpdate(%q, %q): got %q, want %q", s1.UserID, cat1.Name, up.Title, up2.Title)
+				}
+			})
+			t.Run("no update left", func(t *testing.T) {
+				_, err := subscriptionModel.ShiftUpdate(ctx, s1, *cat1)
+				if err != model.ErrNoUpdatesAvailable {
+					t.Errorf("ShiftUpdate(%q, %q): want ErrNoUpdatesAvailable, got %q", s1.UserID, cat1.Name, err)
+					return
+				}
+			})
+			t.Run(up3.Title, func(t *testing.T) {
+				up, err := subscriptionModel.ShiftUpdate(ctx, s1, *cat2)
+				if err != nil {
+					t.Errorf("ShiftUpdate(%q, %q): %v", s1.UserID, cat2.Name, err)
+					return
+				}
+				if up.Title != up3.Title {
+					t.Errorf("ShiftUpdate(%q, %q): got %q, want %q", s1.UserID, cat2.Name, up.Title, up3.Title)
 				}
 			})
 		})

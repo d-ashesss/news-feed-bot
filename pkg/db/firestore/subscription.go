@@ -38,12 +38,12 @@ func (m subscriptionModel) GetSubscriber(ctx context.Context, id string) (*model
 	return s, nil
 }
 
-func (m subscriptionModel) Subscribe(ctx context.Context, s *model.Subscriber, c model.Category) error {
+func (m subscriptionModel) Subscribe(ctx context.Context, s *model.Subscriber, cat model.Category) error {
 	sub, err := m.GetSubscriber(ctx, s.ID)
 	if err != nil {
 		return err
 	}
-	sub.AddCategory(c)
+	sub.AddCategory(cat)
 	if err := m.req().UpdateEntities(ctx, sub)(); err != nil {
 		return err
 	}
@@ -51,12 +51,12 @@ func (m subscriptionModel) Subscribe(ctx context.Context, s *model.Subscriber, c
 	return nil
 }
 
-func (m subscriptionModel) Unsubscribe(ctx context.Context, s *model.Subscriber, c model.Category) error {
+func (m subscriptionModel) Unsubscribe(ctx context.Context, s *model.Subscriber, cat model.Category) error {
 	sub, err := m.GetSubscriber(ctx, s.ID)
 	if err != nil {
 		return err
 	}
-	sub.RemoveCategory(c)
+	sub.RemoveCategory(cat)
 	if err := m.req().UpdateEntities(ctx, sub)(); err != nil {
 		return err
 	}
@@ -113,6 +113,17 @@ func (m subscriptionModel) AddUpdate(ctx context.Context, up model.Update) error
 		_, _ = m.updateModel.Create(ctx, &sup)
 	}
 	return nil
+}
+
+func (m subscriptionModel) ShiftUpdate(ctx context.Context, s *model.Subscriber, cat model.Category) (*model.Update, error) {
+	up, err := m.updateModel.GetFromCategory(ctx, s, &cat)
+	if err != nil {
+		return nil, err
+	}
+	if err := m.updateModel.Delete(ctx, up); err != nil {
+		return nil, err
+	}
+	return up, nil
 }
 
 // req is a shortcut to firestorm.FSClient.NewRequest().

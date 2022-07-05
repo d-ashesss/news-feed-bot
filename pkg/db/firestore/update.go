@@ -3,7 +3,6 @@ package firestore
 import (
 	"cloud.google.com/go/firestore"
 	"context"
-	"fmt"
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/jschoedt/go-firestorm"
 )
@@ -48,7 +47,7 @@ func (m updateModel) GetFromCategory(ctx context.Context, s *model.Subscriber, c
 		return nil, err
 	}
 	if len(ups) == 0 {
-		return nil, fmt.Errorf("no updates found")
+		return nil, model.ErrNoUpdatesAvailable
 	}
 	return &ups[0], nil
 }

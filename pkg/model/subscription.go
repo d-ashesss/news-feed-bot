@@ -16,11 +16,13 @@ type SubscriptionModel interface {
 	// GetSubscriber retrieves a Subscriber entity from the DB.
 	GetSubscriber(ctx context.Context, id string) (*Subscriber, error)
 	// Subscribe subsribes the Subscriber to a Category
-	Subscribe(ctx context.Context, s *Subscriber, c Category) error
+	Subscribe(ctx context.Context, s *Subscriber, cat Category) error
 	// Unsubscribe unsubscribes the Subscriber from a Category
-	Unsubscribe(ctx context.Context, s *Subscriber, c Category) error
+	Unsubscribe(ctx context.Context, s *Subscriber, cat Category) error
 	// GetSubscriptionStatus returns a list of all categories and their subscription status for a given Subscriber.
 	GetSubscriptionStatus(ctx context.Context, s *Subscriber) ([]Subscription, error)
 	// AddUpdate adds and update to each subscriber of a category. Update has to have its Category property set.
 	AddUpdate(ctx context.Context, up Update) error
+	// ShiftUpdate retrieves an Update for selected Category removing it from Subscriber's list of unread updates.
+	ShiftUpdate(ctx context.Context, s *Subscriber, cat Category) (*Update, error)
 }
