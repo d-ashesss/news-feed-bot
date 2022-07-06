@@ -14,6 +14,122 @@ import (
 	"time"
 )
 
+func TestCategoryModel(t *testing.T) {
+	ctx := context.Background()
+	fsc, err := firestore.NewClient(ctx, firestore.DetectProjectID)
+	defer func(fsc *firestore.Client) {
+		_ = fsc.Close()
+	}(fsc)
+	if err != nil {
+		t.Fatalf("failed to create firestore client: %v", err)
+	}
+
+	categoryModel := firestoreDb.NewCategoryModel(fsc)
+
+	cat1 := model.NewCategory("Cat1")
+	cat2 := model.NewCategory("Cat2")
+
+	t.Run("Create", func(t *testing.T) {
+		t.Run("nil", func(t *testing.T) {
+			if _, err := categoryModel.Create(ctx, nil); err != model.ErrInvalidCategory {
+				t.Fatalf("Create(%v): %q; want ErrInvalidCategory", nil, err)
+			}
+		})
+
+		t.Run("nil category", func(t *testing.T) {
+			var nilCat *model.Category
+			if _, err := categoryModel.Create(ctx, nilCat); err != model.ErrInvalidCategory {
+				t.Fatalf("Create(%v): %q; want ErrInvalidCategory", nil, err)
+			}
+		})
+
+		t.Run("empty category", func(t *testing.T) {
+			cat := &model.Category{}
+			if _, err := categoryModel.Create(ctx, cat); err != model.ErrInvalidCategoryName {
+				t.Fatalf("Create(%v): %q; want ErrInvalidCategoryName", cat, err)
+			}
+		})
+
+		t.Run("valid category", func(t *testing.T) {
+			ID, err := categoryModel.Create(ctx, cat1)
+			if err != nil {
+				t.Fatalf("Create(%v): %v", cat1, err)
+			}
+			if ID != cat1.ID {
+				t.Errorf("Create(%v): got ID %v; want %v", cat1, ID, cat1.ID)
+			}
+		})
+	})
+
+	t.Run("Get", func(t *testing.T) {
+		t.Run("empty ID", func(t *testing.T) {
+			if _, err := categoryModel.Get(ctx, ""); err != model.ErrCategoryNotFound {
+				t.Fatalf("Get(%q): %q; want ErrCategoryNotFound", "", err)
+			}
+		})
+
+		t.Run("valid ID", func(t *testing.T) {
+			cat, err := categoryModel.Get(ctx, cat1.ID)
+			if err != nil {
+				t.Fatalf("Get(%q): %v", cat1.Name, err)
+			}
+			if cat.ID != cat1.ID || cat.Name != cat1.Name {
+				t.Errorf("Get(%q): got %v; want %v", cat1.Name, cat, cat1)
+			}
+		})
+	})
+
+	if _, err := categoryModel.Create(ctx, cat2); err != nil {
+		t.Fatalf("Create(%v): %v", cat2, err)
+	}
+
+	t.Run("GetAll", func(t *testing.T) {
+		cats, err := categoryModel.GetAll(ctx)
+		if err != nil {
+			t.Fatalf("GetAll(): %v", err)
+		}
+		wantNum := 2
+		if len(cats) != wantNum {
+			t.Errorf("GetAll(): got %d categories; want %d", len(cats), wantNum)
+		}
+	})
+
+	t.Run("Delete", func(t *testing.T) {
+		t.Run("nil", func(t *testing.T) {
+			if err := categoryModel.Delete(ctx, nil); err != model.ErrInvalidCategory {
+				t.Fatalf("Delete(%v): %q; want ErrInvalidCategory", nil, err)
+			}
+		})
+
+		t.Run("nil category", func(t *testing.T) {
+			var nilCat *model.Category
+			if err := categoryModel.Delete(ctx, nilCat); err != model.ErrInvalidCategory {
+				t.Fatalf("Delete(%v): %q; want ErrInvalidCategory", nilCat, err)
+			}
+		})
+
+		t.Run("empty category", func(t *testing.T) {
+			cat := &model.Category{}
+			if err := categoryModel.Delete(ctx, cat); err != model.ErrInvalidCategory {
+				t.Fatalf("Delete(%v): %q; want ErrInvalidCategory", cat, err)
+			}
+		})
+
+		t.Run("valid category", func(t *testing.T) {
+			if err := categoryModel.Delete(ctx, cat1); err != nil {
+				t.Fatalf("Delete(%v): %v", cat1, err)
+			}
+			if _, err := categoryModel.Get(ctx, cat1.ID); err != model.ErrCategoryNotFound {
+				t.Errorf("Get(%q): got %q; want ErrCategoryNotFound for deleted category", cat1.Name, err)
+			}
+		})
+	})
+
+	if err := categoryModel.Delete(ctx, cat2); err != nil {
+		t.Fatalf("Delete(%v): %v", cat2, err)
+	}
+}
+
 func TestModel(t *testing.T) {
 	ctx := context.Background()
 	fsc, err := firestore.NewClient(ctx, firestore.DetectProjectID)
@@ -55,47 +171,47 @@ func TestModel(t *testing.T) {
 	}
 	var up1, up2, up3 model.Update
 
-	t.Run("CategoryModel", func(t *testing.T) {
-		cat4 := model.NewCategory("Cat4")
-		if _, err := categoryModel.Create(ctx, cat4); err != nil {
-			t.Errorf("Create(%v): %v", cat4, err)
-			return
-		}
-
-		t.Run("Get", func(t *testing.T) {
-			cat, err := categoryModel.Get(ctx, cat4.ID)
-			if err != nil {
-				t.Errorf("Get(%q): %v", cat4.Name, err)
-				return
-			}
-			if cat.ID != cat4.ID || cat.Name != cat4.Name {
-				t.Errorf("Get(%q): got %v, want %v", cat4.Name, cat, cat4)
-			}
-		})
-
-		t.Run("GetAll", func(t *testing.T) {
-			cats, err := categoryModel.GetAll(ctx)
-			if err != nil {
-				t.Errorf("GetAll(): %v", err)
-				return
-			}
-			wantNum := 4
-			if len(cats) != wantNum {
-				t.Errorf("GetAll(): got %d categories, want %d", len(cats), wantNum)
-			}
-		})
-
-		t.Run("Delete", func(t *testing.T) {
-			if err := categoryModel.Delete(ctx, cat4); err != nil {
-				t.Errorf("Delete(%q): %v", cat4.Name, err)
-			}
-			_, err := categoryModel.Get(ctx, cat4.ID)
-			if _, ok := err.(firestorm.NotFoundError); !ok {
-				t.Errorf("Get(%q): got %v, want NotFoundError for deleted category", cat4.Name, err)
-				return
-			}
-		})
-	})
+	//t.Run("CategoryModel", func(t *testing.T) {
+	//	cat4 := model.NewCategory("Cat4")
+	//	if _, err := categoryModel.Create(ctx, cat4); err != nil {
+	//		t.Errorf("Create(%v): %v", cat4, err)
+	//		return
+	//	}
+	//
+	//	t.Run("Get", func(t *testing.T) {
+	//		cat, err := categoryModel.Get(ctx, cat4.ID)
+	//		if err != nil {
+	//			t.Errorf("Get(%q): %v", cat4.Name, err)
+	//			return
+	//		}
+	//		if cat.ID != cat4.ID || cat.Name != cat4.Name {
+	//			t.Errorf("Get(%q): got %v, want %v", cat4.Name, cat, cat4)
+	//		}
+	//	})
+	//
+	//	t.Run("GetAll", func(t *testing.T) {
+	//		cats, err := categoryModel.GetAll(ctx)
+	//		if err != nil {
+	//			t.Errorf("GetAll(): %v", err)
+	//			return
+	//		}
+	//		wantNum := 4
+	//		if len(cats) != wantNum {
+	//			t.Errorf("GetAll(): got %d categories, want %d", len(cats), wantNum)
+	//		}
+	//	})
+	//
+	//	t.Run("Delete", func(t *testing.T) {
+	//		if err := categoryModel.Delete(ctx, cat4); err != nil {
+	//			t.Errorf("Delete(%q): %v", cat4.Name, err)
+	//		}
+	//		_, err := categoryModel.Get(ctx, cat4.ID)
+	//		if _, ok := err.(firestorm.NotFoundError); !ok {
+	//			t.Errorf("Get(%q): got %v, want NotFoundError for deleted category", cat4.Name, err)
+	//			return
+	//		}
+	//	})
+	//})
 
 	t.Run("UpdateModel", func(t *testing.T) {
 		upTitle := "Cat1Up0"
