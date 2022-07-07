@@ -47,7 +47,7 @@ func (m updateModel) GetFromCategory(ctx context.Context, s *model.Subscriber, c
 		return nil, err
 	}
 	if len(ups) == 0 {
-		return nil, model.ErrNoUpdatesAvailable
+		return nil, model.ErrNoUpdates
 	}
 	return &ups[0], nil
 }

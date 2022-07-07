@@ -88,6 +88,11 @@ func TestCategoryModel(t *testing.T) {
 	if _, err := categoryModel.Create(ctx, cat2); err != nil {
 		t.Fatalf("Create(%v): %v", cat2, err)
 	}
+	defer func() {
+		if err := categoryModel.Delete(ctx, cat2); err != nil {
+			t.Fatalf("Delete(%v): %v", cat2, err)
+		}
+	}()
 
 	t.Run("GetAll", func(t *testing.T) {
 		cats, err := categoryModel.GetAll(ctx)
@@ -130,13 +135,220 @@ func TestCategoryModel(t *testing.T) {
 			}
 		})
 	})
-
-	if err := categoryModel.Delete(ctx, cat2); err != nil {
-		t.Fatalf("Delete(%v): %v", cat2, err)
-	}
 }
 
-func TestModel(t *testing.T) {
+func TestUpdateModel(t *testing.T) {
+	ctx := context.Background()
+	fsc, err := firestore.NewClient(ctx, firestore.DetectProjectID)
+	defer func(fsc *firestore.Client) {
+		_ = fsc.Close()
+	}(fsc)
+	if err != nil {
+		t.Fatalf("failed to create firestore client: %v", err)
+	}
+
+	categoryModel := firestoreDb.NewCategoryModel(fsc)
+	updateModel := firestoreDb.NewUpdateModel(fsc)
+	subsModel := firestoreDb.NewSubscriptionModel(fsc, categoryModel, updateModel)
+
+	cat1 := model.NewCategory("Cat1")
+	if _, err := categoryModel.Create(ctx, cat1); err != nil {
+		t.Fatalf("Create(%v): %v", cat1, err)
+	}
+	cat2 := model.NewCategory("Cat2")
+	if _, err := categoryModel.Create(ctx, cat2); err != nil {
+		t.Fatalf("Create(%v): %v", cat2, err)
+	}
+	defer func() {
+		if err := categoryModel.Delete(ctx, cat1); err != nil {
+			t.Fatalf("Delete(%v): %v", cat1, err)
+		}
+		if err := categoryModel.Delete(ctx, cat2); err != nil {
+			t.Fatalf("Delete(%v): %v", cat2, err)
+		}
+	}()
+
+	s1 := &model.Subscriber{UserID: "S1"}
+	if _, err := subsModel.CreateSubscriber(ctx, s1); err != nil {
+		t.Fatalf("CreateSubscriber(%v): %v", s1, err)
+	}
+	s2 := &model.Subscriber{UserID: "S2"}
+	if _, err := subsModel.CreateSubscriber(ctx, s2); err != nil {
+		t.Fatalf("CreateSubscriber(%v): %v", s2, err)
+	}
+
+	upTitle := "Cat1Up0"
+	t.Run("Create", func(t *testing.T) {
+		t.Run("nil subscriber", func(t *testing.T) {
+			up := model.Update{Subscriber: nil, Category: cat1}
+			if _, err := updateModel.Create(ctx, &up); err != model.ErrInvalidSubscriber {
+				t.Errorf("Create(%v): want ErrInvalidSubscriber, got %q", up, err)
+				return
+			}
+		})
+
+		t.Run("invalid subscriber", func(t *testing.T) {
+			up := model.Update{Subscriber: &model.Subscriber{}, Category: cat1}
+			if _, err := updateModel.Create(ctx, &up); err != model.ErrInvalidSubscriber {
+				t.Errorf("Create(%v): want ErrInvalidSubscriber, got %q", up, err)
+				return
+			}
+		})
+
+		t.Run("nil category", func(t *testing.T) {
+			up := model.Update{Subscriber: s1, Category: nil}
+			if _, err := updateModel.Create(ctx, &up); err != model.ErrInvalidCategory {
+				t.Errorf("Create(%v): want ErrInvalidCategory, got %q", up, err)
+				return
+			}
+		})
+
+		t.Run("invalid category", func(t *testing.T) {
+			up := model.Update{Subscriber: s1, Category: &model.Category{}}
+			if _, err := updateModel.Create(ctx, &up); err != model.ErrInvalidCategory {
+				t.Errorf("Create(%v): want ErrInvalidCategory, got %q", up, err)
+				return
+			}
+		})
+
+		t.Run("valid update", func(t *testing.T) {
+			up := model.Update{Subscriber: s1, Category: cat1, Title: upTitle}
+			_, err := updateModel.Create(ctx, &up)
+			if err != nil {
+				t.Errorf("Create(%v): %v", up, err)
+				return
+			}
+			if len(up.ID) == 0 {
+				t.Errorf("Create(): want ID field to be set")
+			}
+		})
+	})
+
+	t.Run("GetFromCategory", func(t *testing.T) {
+		t.Run("nil subscriber", func(t *testing.T) {
+			if _, err := updateModel.GetFromCategory(ctx, nil, cat2); err != model.ErrInvalidSubscriber {
+				t.Errorf("GetFromCategory(%v, %q): want ErrInvalidSubscriber, got %q", nil, cat2.Name, err)
+				return
+			}
+		})
+
+		t.Run("invalid subscriber", func(t *testing.T) {
+			if _, err := updateModel.GetFromCategory(ctx, &model.Subscriber{}, cat2); err != model.ErrInvalidSubscriber {
+				t.Errorf("GetFromCategory({}, %q): want ErrInvalidSubscriber, got %q", cat2.Name, err)
+				return
+			}
+		})
+
+		t.Run("nil category", func(t *testing.T) {
+			if _, err := updateModel.GetFromCategory(ctx, s1, nil); err != model.ErrInvalidCategory {
+				t.Errorf("GetFromCategory(%q, %v): want ErrInvalidCategory, got %q", s1.UserID, nil, err)
+				return
+			}
+		})
+
+		t.Run("invalid category", func(t *testing.T) {
+			if _, err := updateModel.GetFromCategory(ctx, s1, &model.Category{}); err != model.ErrInvalidCategory {
+				t.Errorf("GetFromCategory(%q, {}): want ErrInvalidCategory, got %q", s1.UserID, err)
+				return
+			}
+		})
+
+		t.Run("category has no updates", func(t *testing.T) {
+			if _, err := updateModel.GetFromCategory(ctx, s1, cat2); err != model.ErrNoUpdates {
+				t.Errorf("GetFromCategory(%q, %q): want ErrNoUpdateAvailable, got %q", s1.UserID, cat2.Name, err)
+				return
+			}
+		})
+
+		t.Run("subscriber has no updates", func(t *testing.T) {
+			if _, err := updateModel.GetFromCategory(ctx, s2, cat1); err != model.ErrNoUpdates {
+				t.Errorf("GetFromCategory(%q, %q): want ErrNoUpdateAvailable, got %q", s2.UserID, cat1.Name, err)
+				return
+			}
+		})
+
+		t.Run("has update", func(t *testing.T) {
+			up, err := updateModel.GetFromCategory(ctx, s1, cat1)
+			if err != nil {
+				t.Errorf("GetFromCategory(%q, %q): %v", s1.UserID, cat1.Name, err)
+				return
+			}
+			if up.Title != upTitle {
+				t.Errorf("GetFromCategory(%q, %q): got %q, want %q", s1.UserID, cat1.Name, up.Title, upTitle)
+			}
+		})
+	})
+
+	t.Run("GetCountInCategory", func(t *testing.T) {
+		t.Run("nil subscriber", func(t *testing.T) {
+			if _, err := updateModel.GetCountInCategory(ctx, nil, cat2); err != model.ErrInvalidSubscriber {
+				t.Errorf("GetCountInCategory(%v, %q): want ErrInvalidSubscriber, got %q", nil, cat2.Name, err)
+				return
+			}
+		})
+
+		t.Run("invalid subscriber", func(t *testing.T) {
+			if _, err := updateModel.GetCountInCategory(ctx, &model.Subscriber{}, cat2); err != model.ErrInvalidSubscriber {
+				t.Errorf("GetCountInCategory({}, %q): want ErrInvalidSubscriber, got %q", cat2.Name, err)
+				return
+			}
+		})
+
+		t.Run("nil category", func(t *testing.T) {
+			if _, err := updateModel.GetCountInCategory(ctx, s1, nil); err != model.ErrInvalidCategory {
+				t.Errorf("GetCountInCategory(%q, %v): want ErrInvalidCategory, got %q", s1.UserID, nil, err)
+				return
+			}
+		})
+
+		t.Run("invalid category", func(t *testing.T) {
+			if _, err := updateModel.GetCountInCategory(ctx, s1, &model.Category{}); err != model.ErrInvalidCategory {
+				t.Errorf("GetCountInCategory(%q, {}): want ErrInvalidCategory, got %q", s1.UserID, err)
+				return
+			}
+		})
+
+		t.Run("empty category", func(t *testing.T) {
+			wantCount := 0
+			count, err := updateModel.GetCountInCategory(ctx, s1, cat2)
+			if err != nil {
+				t.Errorf("GetCountInCategory(%q, %q): %v", s1.UserID, cat2.Name, err)
+				return
+			}
+			if count != wantCount {
+				t.Errorf("GetCountInCategory(%q, %q): got %d updates, want %d", s1.UserID, cat2.Name, count, wantCount)
+			}
+		})
+		t.Run("not empty category", func(t *testing.T) {
+			wantCount := 1
+			count, err := updateModel.GetCountInCategory(ctx, s1, cat1)
+			if err != nil {
+				t.Errorf("GetCountInCategory(%q, %q): %v", s1.UserID, cat1.Name, err)
+				return
+			}
+			if count != wantCount {
+				t.Errorf("GetCountInCategory(%q, %q): got %d updates, want %d", s1.UserID, cat1.Name, count, wantCount)
+			}
+		})
+	})
+
+	t.Run("Delete", func(t *testing.T) {
+		up, err := updateModel.GetFromCategory(ctx, s1, cat1)
+		if err != nil {
+			t.Errorf("GetFromCategory(%q, %q): %v", s1.UserID, cat1.Name, err)
+			return
+		}
+		if err := updateModel.Delete(ctx, up); err != nil {
+			t.Errorf("Delete(%v): %v", up.Title, err)
+		}
+		if _, err = updateModel.GetFromCategory(ctx, s1, cat1); err != model.ErrNoUpdates {
+			t.Errorf("GetFromCategory(%q, %q): want ErrNoUpdateAvailable for deleted update, got %q", s1.UserID, cat2.Name, err)
+			return
+		}
+	})
+}
+
+func TestSubscriptionModel(t *testing.T) {
 	ctx := context.Background()
 	fsc, err := firestore.NewClient(ctx, firestore.DetectProjectID)
 	defer func(fsc *firestore.Client) {
@@ -176,176 +388,6 @@ func TestModel(t *testing.T) {
 		t.Fatalf("failed to create subscriber %v: %v", s2, err)
 	}
 	var up1, up2, up3 model.Update
-
-	//t.Run("CategoryModel", func(t *testing.T) {
-	//	cat4 := model.NewCategory("Cat4")
-	//	if _, err := categoryModel.Create(ctx, cat4); err != nil {
-	//		t.Errorf("Create(%v): %v", cat4, err)
-	//		return
-	//	}
-	//
-	//	t.Run("Get", func(t *testing.T) {
-	//		cat, err := categoryModel.Get(ctx, cat4.ID)
-	//		if err != nil {
-	//			t.Errorf("Get(%q): %v", cat4.Name, err)
-	//			return
-	//		}
-	//		if cat.ID != cat4.ID || cat.Name != cat4.Name {
-	//			t.Errorf("Get(%q): got %v, want %v", cat4.Name, cat, cat4)
-	//		}
-	//	})
-	//
-	//	t.Run("GetAll", func(t *testing.T) {
-	//		cats, err := categoryModel.GetAll(ctx)
-	//		if err != nil {
-	//			t.Errorf("GetAll(): %v", err)
-	//			return
-	//		}
-	//		wantNum := 4
-	//		if len(cats) != wantNum {
-	//			t.Errorf("GetAll(): got %d categories, want %d", len(cats), wantNum)
-	//		}
-	//	})
-	//
-	//	t.Run("Delete", func(t *testing.T) {
-	//		if err := categoryModel.Delete(ctx, cat4); err != nil {
-	//			t.Errorf("Delete(%q): %v", cat4.Name, err)
-	//		}
-	//		_, err := categoryModel.Get(ctx, cat4.ID)
-	//		if _, ok := err.(firestorm.NotFoundError); !ok {
-	//			t.Errorf("Get(%q): got %v, want NotFoundError for deleted category", cat4.Name, err)
-	//			return
-	//		}
-	//	})
-	//})
-
-	t.Run("UpdateModel", func(t *testing.T) {
-		upTitle := "Cat1Up0"
-		t.Run("Create", func(t *testing.T) {
-			t.Run("invalid subscriber", func(t *testing.T) {
-				up := model.Update{Subscriber: nil, Category: cat1, Title: upTitle}
-				if _, err := updateModel.Create(ctx, &up); err != model.ErrInvalidSubscriber {
-					t.Errorf("Create(%v): want ErrInvalidSubscriber, got %q", up, err)
-					return
-				}
-			})
-
-			t.Run("invalid category", func(t *testing.T) {
-				up := model.Update{Subscriber: s1, Category: nil, Title: upTitle}
-				if _, err := updateModel.Create(ctx, &up); err != model.ErrInvalidCategory {
-					t.Errorf("Create(%v): want ErrInvalidCategory, got %q", up, err)
-					return
-				}
-			})
-
-			t.Run("valid update", func(t *testing.T) {
-				up := model.Update{Subscriber: s1, Category: cat1, Title: upTitle}
-				_, err := updateModel.Create(ctx, &up)
-				if err != nil {
-					t.Errorf("Create(%v): %v", up, err)
-					return
-				}
-				if len(up.ID) == 0 {
-					t.Errorf("Create(): want ID field to be set")
-				}
-			})
-		})
-
-		t.Run("GetFromCategory", func(t *testing.T) {
-			t.Run("invalid subscriber", func(t *testing.T) {
-				if _, err := updateModel.GetFromCategory(ctx, nil, cat2); err != model.ErrInvalidSubscriber {
-					t.Errorf("GetFromCategory(%v, %q): want ErrInvalidSubscriber, got %q", nil, cat2.Name, err)
-					return
-				}
-			})
-
-			t.Run("invalid category", func(t *testing.T) {
-				if _, err := updateModel.GetFromCategory(ctx, s1, nil); err != model.ErrInvalidCategory {
-					t.Errorf("GetFromCategory(%q, %v): want ErrInvalidCategory, got %q", s1.UserID, nil, err)
-					return
-				}
-			})
-
-			t.Run("category has no updates", func(t *testing.T) {
-				if _, err := updateModel.GetFromCategory(ctx, s1, cat2); err != model.ErrNoUpdatesAvailable {
-					t.Errorf("GetFromCategory(%q, %q): want ErrNoUpdateAvailable, got %q", s1.UserID, cat2.Name, err)
-					return
-				}
-			})
-
-			t.Run("subscriber has no updates", func(t *testing.T) {
-				if _, err := updateModel.GetFromCategory(ctx, s2, cat1); err != model.ErrNoUpdatesAvailable {
-					t.Errorf("GetFromCategory(%q, %q): want ErrNoUpdateAvailable, got %q", s2.UserID, cat1.Name, err)
-					return
-				}
-			})
-
-			t.Run("has update", func(t *testing.T) {
-				up, err := updateModel.GetFromCategory(ctx, s1, cat1)
-				if err != nil {
-					t.Errorf("GetFromCategory(%q, %q): %v", s1.UserID, cat1.Name, err)
-					return
-				}
-				if up.Title != upTitle {
-					t.Errorf("GetFromCategory(%q, %q): got %v, want %v", s1.UserID, cat1.Name, up.Title, upTitle)
-				}
-			})
-		})
-
-		t.Run("GetCountInCategory", func(t *testing.T) {
-			t.Run("invalid subscriber", func(t *testing.T) {
-				if _, err := updateModel.GetCountInCategory(ctx, nil, cat2); err != model.ErrInvalidSubscriber {
-					t.Errorf("GetCountInCategory(%v, %q): want ErrInvalidSubscriber, got %q", nil, cat2.Name, err)
-					return
-				}
-			})
-
-			t.Run("invalid category", func(t *testing.T) {
-				if _, err := updateModel.GetCountInCategory(ctx, s1, nil); err != model.ErrInvalidCategory {
-					t.Errorf("GetCountInCategory(%q, %v): want ErrInvalidCategory, got %q", s1.UserID, nil, err)
-					return
-				}
-			})
-
-			t.Run("empty category", func(t *testing.T) {
-				wantCount := 0
-				count, err := updateModel.GetCountInCategory(ctx, s1, cat2)
-				if err != nil {
-					t.Errorf("GetCountInCategory(%q, %q): %v", s1.UserID, cat2.Name, err)
-					return
-				}
-				if count != wantCount {
-					t.Errorf("GetCountInCategory(%q, %q): got %d updates, want %d", s1.UserID, cat2.Name, count, wantCount)
-				}
-			})
-			t.Run("not empty category", func(t *testing.T) {
-				wantCount := 1
-				count, err := updateModel.GetCountInCategory(ctx, s1, cat1)
-				if err != nil {
-					t.Errorf("GetCountInCategory(%q, %q): %v", s1.UserID, cat1.Name, err)
-					return
-				}
-				if count != wantCount {
-					t.Errorf("GetCountInCategory(%q, %q): got %d updates, want %d", s1.UserID, cat1.Name, count, wantCount)
-				}
-			})
-		})
-
-		t.Run("Delete", func(t *testing.T) {
-			up, err := updateModel.GetFromCategory(ctx, s1, cat1)
-			if err != nil {
-				t.Errorf("GetFromCategory(%q, %q): %v", s1.UserID, cat1.Name, err)
-				return
-			}
-			if err := updateModel.Delete(ctx, up); err != nil {
-				t.Errorf("Delete(%v): %v", up.Title, err)
-			}
-			if _, err = updateModel.GetFromCategory(ctx, s1, cat1); err != model.ErrNoUpdatesAvailable {
-				t.Errorf("GetFromCategory(%q, %q): want ErrNoUpdateAvailable for deleted update, got %q", s1.UserID, cat2.Name, err)
-				return
-			}
-		})
-	})
 
 	t.Run("SubscriptionModel", func(t *testing.T) {
 		t.Run("GetSubscriber", func(t *testing.T) {
@@ -548,7 +590,7 @@ func TestModel(t *testing.T) {
 			})
 			t.Run("no update left", func(t *testing.T) {
 				_, err := subscriptionModel.ShiftUpdate(ctx, s1, *cat1)
-				if err != model.ErrNoUpdatesAvailable {
+				if err != model.ErrNoUpdates {
 					t.Errorf("ShiftUpdate(%q, %q): want ErrNoUpdatesAvailable, got %q", s1.UserID, cat1.Name, err)
 					return
 				}
