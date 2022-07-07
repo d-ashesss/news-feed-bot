@@ -19,6 +19,12 @@ func NewCategoryModel(c *fst.Client) model.CategoryModel {
 }
 
 func (m categoryModel) Create(ctx context.Context, c *model.Category) (string, error) {
+	if c == nil {
+		return "", model.ErrInvalidCategory
+	}
+	if len(c.Name) == 0 {
+		return "", model.ErrInvalidCategoryName
+	}
 	if err := m.req().CreateEntities(ctx, c)(); err != nil {
 		return "", err
 	}
@@ -26,8 +32,15 @@ func (m categoryModel) Create(ctx context.Context, c *model.Category) (string, e
 }
 
 func (m categoryModel) Get(ctx context.Context, id string) (*model.Category, error) {
+	if id == "" {
+		return nil, model.ErrCategoryNotFound
+	}
 	c := &model.Category{ID: id}
-	if _, err := m.req().GetEntities(ctx, c)(); err != nil {
+	_, err := m.req().GetEntities(ctx, c)()
+	if _, ok := err.(firestorm.NotFoundError); ok {
+		return nil, model.ErrCategoryNotFound
+	}
+	if err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -43,6 +56,9 @@ func (m categoryModel) GetAll(ctx context.Context) ([]model.Category, error) {
 }
 
 func (m categoryModel) Delete(ctx context.Context, c *model.Category) error {
+	if c == nil || c.ID == "" {
+		return model.ErrInvalidCategory
+	}
 	return m.req().DeleteEntities(ctx, c)()
 }
 

@@ -68,6 +68,12 @@ func TestCategoryModel(t *testing.T) {
 			}
 		})
 
+		t.Run("invalid ID", func(t *testing.T) {
+			if _, err := categoryModel.Get(ctx, "nothing"); err != model.ErrCategoryNotFound {
+				t.Fatalf("Get(%q): %q; want ErrCategoryNotFound", "", err)
+			}
+		})
+
 		t.Run("valid ID", func(t *testing.T) {
 			cat, err := categoryModel.Get(ctx, cat1.ID)
 			if err != nil {
