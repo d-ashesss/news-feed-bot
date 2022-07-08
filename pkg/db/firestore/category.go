@@ -33,12 +33,12 @@ func (m categoryModel) Create(ctx context.Context, c *model.Category) (string, e
 
 func (m categoryModel) Get(ctx context.Context, id string) (*model.Category, error) {
 	if id == "" {
-		return nil, model.ErrCategoryNotFound
+		return nil, model.ErrNotFound
 	}
 	c := &model.Category{ID: id}
 	_, err := m.req().GetEntities(ctx, c)()
 	if _, ok := err.(firestorm.NotFoundError); ok {
-		return nil, model.ErrCategoryNotFound
+		return nil, model.ErrNotFound
 	}
 	if err != nil {
 		return nil, err

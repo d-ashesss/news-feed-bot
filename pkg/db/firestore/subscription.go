@@ -9,39 +9,31 @@ import (
 
 // subscriptionModel is a Firestore implementation of model.SubscriptionModel.
 type subscriptionModel struct {
-	fsc           *firestorm.FSClient // fsc is a Firestore client.
-	categoryModel model.CategoryModel // categoryModel is an implementation of model.CategoryModel.
-	updateModel   model.UpdateModel   // updateModel is an implementation of model.UpdateModel.
+	fsc             *firestorm.FSClient   // fsc is a Firestore client.
+	categoryModel   model.CategoryModel   // categoryModel is an implementation of model.CategoryModel.
+	subscriberModel model.SubscriberModel // subscriberModel  is an implementation of model.SubscriberModel.
+	updateModel     model.UpdateModel     // updateModel is an implementation of model.UpdateModel.
 }
 
 // NewSubscriptionModel initializes Firestore implementation of model.SubscriptionModel.
-func NewSubscriptionModel(c *fst.Client, categoryModel model.CategoryModel, updateModel model.UpdateModel) model.SubscriptionModel {
+func NewSubscriptionModel(
+	c *fst.Client,
+	categoryModel model.CategoryModel,
+	subscriberModel model.SubscriberModel,
+	updateModel model.UpdateModel,
+) model.SubscriptionModel {
 	return subscriptionModel{
-		fsc:           firestorm.New(c, "ID", ""),
-		categoryModel: categoryModel,
-		updateModel:   updateModel,
+		fsc:             firestorm.New(c, "ID", ""),
+		categoryModel:   categoryModel,
+		subscriberModel: subscriberModel,
+		updateModel:     updateModel,
 	}
-}
-
-func (m subscriptionModel) CreateSubscriber(ctx context.Context, s *model.Subscriber) (string, error) {
-	if err := m.req().CreateEntities(ctx, s)(); err != nil {
-		return "", err
-	}
-	return m.req().GetID(s), nil
-}
-
-func (m subscriptionModel) GetSubscriber(ctx context.Context, id string) (*model.Subscriber, error) {
-	s := &model.Subscriber{ID: id}
-	if _, err := m.req().SetLoadPaths(firestorm.AllEntities).GetEntities(ctx, s)(); err != nil {
-		return nil, err
-	}
-	return s, nil
 }
 
 func (m subscriptionModel) Subscribe(ctx context.Context, s *model.Subscriber, cat model.Category) error {
-	sub, err := m.GetSubscriber(ctx, s.ID)
+	sub, err := m.subscriberModel.Get(ctx, s.UserID)
 	if err != nil {
-		return err
+		return model.ErrInvalidSubscriber
 	}
 	sub.AddCategory(cat)
 	if err := m.req().UpdateEntities(ctx, sub)(); err != nil {
@@ -52,9 +44,9 @@ func (m subscriptionModel) Subscribe(ctx context.Context, s *model.Subscriber, c
 }
 
 func (m subscriptionModel) Unsubscribe(ctx context.Context, s *model.Subscriber, cat model.Category) error {
-	sub, err := m.GetSubscriber(ctx, s.ID)
+	sub, err := m.subscriberModel.Get(ctx, s.UserID)
 	if err != nil {
-		return err
+		return model.ErrInvalidSubscriber
 	}
 	sub.RemoveCategory(cat)
 	if err := m.req().UpdateEntities(ctx, sub)(); err != nil {
@@ -66,9 +58,9 @@ func (m subscriptionModel) Unsubscribe(ctx context.Context, s *model.Subscriber,
 
 // Subscribed shows subscription status for a given model.Category.
 func (m subscriptionModel) Subscribed(ctx context.Context, s *model.Subscriber, c model.Category) (bool, error) {
-	sub, err := m.GetSubscriber(ctx, s.ID)
+	sub, err := m.subscriberModel.Get(ctx, s.UserID)
 	if err != nil {
-		return false, err
+		return false, model.ErrInvalidSubscriber
 	}
 	for _, cat := range sub.Categories {
 		if cat.ID == c.ID {

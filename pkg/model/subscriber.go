@@ -30,6 +30,7 @@ func (s *Subscriber) RemoveCategory(c Category) {
 	s.Categories = subs
 }
 
+// SubscriberModel is a data model for Subscriber.
 type SubscriberModel interface {
 	// Create saves a Subscriber entity into the DB.
 	Create(ctx context.Context, s *Subscriber) (string, error)

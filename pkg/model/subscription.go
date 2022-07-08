@@ -11,10 +11,6 @@ type Subscription struct {
 
 // SubscriptionModel is a data model for Subscription.
 type SubscriptionModel interface {
-	// CreateSubscriber saves a Subscriber entity into the DB.
-	CreateSubscriber(ctx context.Context, s *Subscriber) (string, error)
-	// GetSubscriber retrieves a Subscriber entity from the DB.
-	GetSubscriber(ctx context.Context, id string) (*Subscriber, error)
 	// Subscribe subsribes the Subscriber to a Category
 	Subscribe(ctx context.Context, s *Subscriber, cat Category) error
 	// Unsubscribe unsubscribes the Subscriber from a Category
