@@ -1,5 +1,7 @@
 package model
 
+import "context"
+
 // Subscriber represents subscriber entitiy.
 type Subscriber struct {
 	ID         string     // ID is an internal DB ID of the user.
@@ -26,4 +28,13 @@ func (s *Subscriber) RemoveCategory(c Category) {
 		}
 	}
 	s.Categories = subs
+}
+
+type SubscriberModel interface {
+	// Create saves a Subscriber entity into the DB.
+	Create(ctx context.Context, s *Subscriber) (string, error)
+	// Get retrieves a Subscriber entity from the DB by external UserID.
+	Get(ctx context.Context, id string) (*Subscriber, error)
+	// Delete deletes a Subscriber entity from the DB.
+	Delete(ctx context.Context, s *Subscriber) error
 }
