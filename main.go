@@ -44,8 +44,11 @@ func main() {
 	userStore := firestoreDb.NewUserStore(fstore)
 	userModel := model.NewUserModel(userStore)
 	categoryModel := firestoreDb.NewCategoryModel(fstore)
+	subscriberModel := firestoreDb.NewSubscriberModel(fstore)
+	updateModel := firestoreDb.NewUpdateModel(fstore)
+	subscriptionModel := firestoreDb.NewSubscriptionModel(fstore, categoryModel, subscriberModel, updateModel)
 
-	app := NewApp(config, httpServer, userModel, categoryModel)
+	app := NewApp(config, httpServer, userModel, categoryModel, subscriberModel, subscriptionModel)
 
 	b, err := bot.New(config.TelegramToken)
 	if err != nil {

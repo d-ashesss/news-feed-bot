@@ -12,11 +12,13 @@ import (
 )
 
 type App struct {
-	Config        Config
-	HttpServer    *http.Server
-	Bot           *bot.Bot
-	UserModel     *model.UserModel
-	CategoryModel model.CategoryModel
+	Config            Config
+	HttpServer        *http.Server
+	Bot               *bot.Bot
+	UserModel         *model.UserModel
+	CategoryModel     model.CategoryModel
+	SubscriberModel   model.SubscriberModel
+	SubscriptionModel model.SubscriptionModel
 }
 
 func (a *App) Run() {
@@ -56,12 +58,16 @@ func NewApp(
 	httpServer *http.Server,
 	userModel *model.UserModel,
 	categoryModel model.CategoryModel,
+	subscriberModel model.SubscriberModel,
+	subscriptionModel model.SubscriptionModel,
 ) *App {
 	app := &App{
-		Config:        config,
-		HttpServer:    httpServer,
-		UserModel:     userModel,
-		CategoryModel: categoryModel,
+		Config:            config,
+		HttpServer:        httpServer,
+		UserModel:         userModel,
+		CategoryModel:     categoryModel,
+		SubscriberModel:   subscriberModel,
+		SubscriptionModel: subscriptionModel,
 	}
 
 	app.HttpServer.Get("/", app.handleIndex)

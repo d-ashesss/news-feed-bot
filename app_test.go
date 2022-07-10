@@ -61,6 +61,6 @@ func NewAppTest() *AppTest {
 		httpServer:     httpServer,
 		logger:         logger,
 		logBuffer:      buffer,
-		app:            NewApp(config, httpServer, userModel, nil),
+		app:            NewApp(config, httpServer, userModel, nil, nil, nil),
 	}
 }
