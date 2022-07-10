@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"gopkg.in/tucnak/telebot.v2"
 )
@@ -31,10 +32,17 @@ type BotMenuCategoriesUpdates struct {
 	Menu *telebot.ReplyMarkup
 }
 
-func NewBotMenuCategoriesUpdates(_ []model.Subscription) *BotMenuCategoriesUpdates {
+func NewBotMenuCategoriesUpdates(subs []model.Subscription) *BotMenuCategoriesUpdates {
 	m := &BotMenuCategoriesUpdates{
 		Menu: &telebot.ReplyMarkup{},
 	}
+	rows := make([]telebot.Row, 0, len(subs))
+	for _, sub := range subs {
+		label := fmt.Sprintf("%s (%d)", sub.Category.Name, sub.Unread)
+		btn := m.Menu.Data(label, "btnMenuCategoriesUpdates", sub.Category.ID)
+		rows = append(rows, m.Menu.Row(btn))
+	}
+	m.Menu.Inline(rows...)
 	return m
 }
 
