@@ -47,21 +47,11 @@ func (a *App) botMiddlewareMessageLogMessage(next func(ctx context.Context, m *t
 // botMiddlewareMessageGetUser loads existing model.User or creating a new one.
 func (a *App) botMiddlewareMessageGetUser(next func(ctx context.Context, m *telebot.Message)) func(ctx context.Context, m *telebot.Message) {
 	return func(ctx context.Context, m *telebot.Message) {
-		user, err := a.UserModel.GetByTelegramID(ctx, m.Sender.ID)
+		ctx, err := loadUser(ctx, a.UserModel, m.Sender)
 		if err != nil {
-			log.Printf("[bot] No user for TG ID %d: %v", m.Sender.ID, err)
-			user = model.NewUser(m.Sender.ID)
-			if err := a.UserModel.Create(ctx, user); err != nil {
-				log.Printf("[bot] Failed to create user: %q", err)
-				return
-			} else {
-				log.Printf("[bot] Created user %q", user.ID)
-			}
-		} else {
-			log.Printf("[bot] Found user %q with TG ID %d", user.ID, user.TelegramID)
+			log.Printf("[bot] Failed to load user: %q", err)
+			return
 		}
-
-		ctx = context.WithValue(ctx, BotCtxUser, user)
 		next(ctx, m)
 	}
 }
@@ -95,22 +85,28 @@ func botCallbackHandlerWithContext(
 // botMiddlewareCallbackGetUser loads existing model.User or creating a new one.
 func (a *App) botMiddlewareCallbackGetUser(next func(ctx context.Context, cb *telebot.Callback)) func(ctx context.Context, cb *telebot.Callback) {
 	return func(ctx context.Context, cb *telebot.Callback) {
-
-		user, err := a.UserModel.GetByTelegramID(ctx, cb.Sender.ID)
+		ctx, err := loadUser(ctx, a.UserModel, cb.Sender)
 		if err != nil {
-			log.Printf("[bot] No user for TG ID %d", cb.Sender.ID)
-			user = model.NewUser(cb.Sender.ID)
-			if err := a.UserModel.Create(ctx, user); err != nil {
-				log.Printf("[bot] Failed to create user: %q", err)
-				return
-			} else {
-				log.Printf("[bot] Created user %q", user.ID)
-			}
-		} else {
-			log.Printf("[bot] Found user %q with TG ID %d", user.ID, user.TelegramID)
+			log.Printf("[bot] Failed to load user: %q", err)
+			return
 		}
-
-		ctx = context.WithValue(ctx, BotCtxUser, user)
 		next(ctx, cb)
 	}
+}
+
+func loadUser(ctx context.Context, m *model.UserModel, s *telebot.User) (context.Context, error) {
+	user, err := m.GetByTelegramID(ctx, s.ID)
+	if err != nil {
+		log.Printf("[bot] No user for TG ID %d", s.ID)
+		user = model.NewUser(s.ID)
+		if err := m.Create(ctx, user); err != nil {
+			return ctx, err
+		} else {
+			log.Printf("[bot] Created user %q", user.ID)
+		}
+	} else {
+		log.Printf("[bot] Found user %q with TG ID %d", user.ID, user.TelegramID)
+	}
+
+	return context.WithValue(ctx, BotCtxUser, user), nil
 }
