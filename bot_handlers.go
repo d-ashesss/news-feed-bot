@@ -11,7 +11,7 @@ import (
 // botHandleStartCmd handles /start command.
 //   Shows welcome message.
 func (a *App) botHandleStartCmd(ctx context.Context, m *telebot.Message) {
-	user := ctx.Value(BotCtxUser).(*model.User)
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
 	if _, err := a.Bot.Send(
 		m.Sender,
 		fmt.Sprintf("Welcome, *%s* 🎉", user.ID),
@@ -25,7 +25,7 @@ func (a *App) botHandleStartCmd(ctx context.Context, m *telebot.Message) {
 // botHandleStartCmd handles /menu command.
 //   Shows main menu.
 func (a *App) botHandleMenuCmd(ctx context.Context, m *telebot.Message) {
-	user := ctx.Value(BotCtxUser).(*model.User)
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
 	if _, err := a.Bot.Send(
 		m.Sender,
 		fmt.Sprintf("Your menu, *%s*: 🗒", user.ID),
@@ -38,18 +38,9 @@ func (a *App) botHandleMenuCmd(ctx context.Context, m *telebot.Message) {
 
 // botHandleCheckUpdatesCallback handles request to show unread updates.
 func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Callback) {
-	userID := fmt.Sprintf("telegram:%d", cb.Sender.ID)
-	s, err := a.SubscriberModel.Get(ctx, userID)
-	if err == model.ErrNotFound {
-		s = model.NewSubscriber(userID)
-		_, err = a.SubscriberModel.Create(ctx, s)
-	}
-	if err != nil {
-		log.Printf("botHandleCheckUpdatesCallback: get subscriber: %v", err)
-		_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
-		return
-	}
-	subs, err := a.SubscriptionModel.GetSubscriptionStatus(ctx, s)
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
+
+	subs, err := a.SubscriptionModel.GetSubscriptionStatus(ctx, user)
 	if err != nil {
 		log.Printf("botHandleCheckUpdatesCallback: subscription status: %v", err)
 		_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
@@ -69,7 +60,7 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 //   - Confirm action will be handled by botHandleDeleteConfirmCallback
 //   - Cancel action will be handled by botHandleDeleteCancelCallback
 func (a *App) botHandleDeleteCmd(ctx context.Context, m *telebot.Message) {
-	user := ctx.Value(BotCtxUser).(*model.User)
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
 
 	if _, err := a.Bot.Send(
 		m.Sender,
@@ -86,9 +77,9 @@ func (a *App) botHandleDeleteCmd(ctx context.Context, m *telebot.Message) {
 
 // botHandleDeleteConfirmCallback handles confirmation callback of Delete User menu.
 func (a *App) botHandleDeleteConfirmCallback(ctx context.Context, cb *telebot.Callback) {
-	user := ctx.Value(BotCtxUser).(*model.User)
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
 
-	if err := a.UserModel.Delete(ctx, user); err != nil {
+	if err := a.SubscriberModel.Delete(ctx, user); err != nil {
 		log.Printf("[bot] botHandleDeleteConfirmCallback() Failed to delete user: %v", err)
 		_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: "Something went wrong, please try again later.", ShowAlert: true})
 		return
@@ -112,7 +103,7 @@ func (a *App) botHandleDeleteConfirmCallback(ctx context.Context, cb *telebot.Ca
 
 // botHandleDeleteCancelCallback handles cancellation callback of Delete User menu.
 func (a *App) botHandleDeleteCancelCallback(ctx context.Context, cb *telebot.Callback) {
-	user := ctx.Value(BotCtxUser).(*model.User)
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
 
 	if _, err := a.Bot.Edit(
 		cb.Message,

@@ -3,8 +3,6 @@ package main
 import (
 	"bytes"
 	apphttp "github.com/d-ashesss/news-feed-bot/http"
-	"github.com/d-ashesss/news-feed-bot/pkg/db/memory"
-	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/go-martini/martini"
 	"io"
 	"io/ioutil"
@@ -53,14 +51,11 @@ func NewAppTest() *AppTest {
 	handler.Map(logger)
 	httpServer := &apphttp.Server{StoppableListener: testServer.Config, Router: handler, Logger: logger}
 
-	userStore := memory.NewUserStore()
-	userModel := model.NewUserModel(userStore)
-
 	return &AppTest{
 		testHttpServer: testServer,
 		httpServer:     httpServer,
 		logger:         logger,
 		logBuffer:      buffer,
-		app:            NewApp(config, httpServer, userModel, nil, nil, nil),
+		app:            NewApp(config, httpServer, nil, nil, nil),
 	}
 }

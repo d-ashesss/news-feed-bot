@@ -6,7 +6,6 @@ import (
 	"github.com/d-ashesss/news-feed-bot/bot"
 	"github.com/d-ashesss/news-feed-bot/http"
 	firestoreDb "github.com/d-ashesss/news-feed-bot/pkg/db/firestore"
-	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/d-ashesss/news-feed-bot/secretmanager"
 	"log"
 	"os"
@@ -41,14 +40,12 @@ func main() {
 
 	httpServer := http.NewServer(config.WebPort)
 
-	userStore := firestoreDb.NewUserStore(fstore)
-	userModel := model.NewUserModel(userStore)
 	categoryModel := firestoreDb.NewCategoryModel(fstore)
 	subscriberModel := firestoreDb.NewSubscriberModel(fstore)
 	updateModel := firestoreDb.NewUpdateModel(fstore)
 	subscriptionModel := firestoreDb.NewSubscriptionModel(fstore, categoryModel, subscriberModel, updateModel)
 
-	app := NewApp(config, httpServer, userModel, categoryModel, subscriberModel, subscriptionModel)
+	app := NewApp(config, httpServer, categoryModel, subscriberModel, subscriptionModel)
 
 	b, err := bot.New(config.TelegramToken)
 	if err != nil {

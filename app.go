@@ -15,7 +15,6 @@ type App struct {
 	Config            Config
 	HttpServer        *http.Server
 	Bot               *bot.Bot
-	UserModel         *model.UserModel
 	CategoryModel     model.CategoryModel
 	SubscriberModel   model.SubscriberModel
 	SubscriptionModel model.SubscriptionModel
@@ -56,7 +55,6 @@ func (a *App) Run() {
 func NewApp(
 	config Config,
 	httpServer *http.Server,
-	userModel *model.UserModel,
 	categoryModel model.CategoryModel,
 	subscriberModel model.SubscriberModel,
 	subscriptionModel model.SubscriptionModel,
@@ -64,7 +62,6 @@ func NewApp(
 	app := &App{
 		Config:            config,
 		HttpServer:        httpServer,
-		UserModel:         userModel,
 		CategoryModel:     categoryModel,
 		SubscriberModel:   subscriberModel,
 		SubscriptionModel: subscriptionModel,
