@@ -9,12 +9,16 @@ import (
 const (
 	BotMenuMainBtnCheckUpdatesLabel = "Check for updates"
 	BotMenuMainBtnCheckUpdatesID    = "btnMenuMainCheckUpdates"
+
+	BotMenuMainBtnSelectCategoriesLabel = "Select categories"
+	BotMenuMainBtnSelectCategoriesID    = "btnMenuMainSelectCategories"
 )
 
 type BotMenuMain struct {
 	Menu *telebot.ReplyMarkup
 
-	BtnCheckUpdates telebot.Btn
+	BtnCheckUpdates     telebot.Btn
+	BtnSelectCategories telebot.Btn
 }
 
 func NewBotMenuMain() *BotMenuMain {
@@ -22,8 +26,10 @@ func NewBotMenuMain() *BotMenuMain {
 		Menu: &telebot.ReplyMarkup{},
 	}
 	m.BtnCheckUpdates = m.Menu.Data(BotMenuMainBtnCheckUpdatesLabel, BotMenuMainBtnCheckUpdatesID)
+	m.BtnSelectCategories = m.Menu.Data(BotMenuMainBtnSelectCategoriesLabel, BotMenuMainBtnSelectCategoriesID)
 	m.Menu.Inline(
 		m.Menu.Row(m.BtnCheckUpdates),
+		m.Menu.Row(m.BtnSelectCategories),
 	)
 	return m
 }
@@ -40,6 +46,29 @@ func NewBotMenuCategoriesUpdates(subs []model.Subscription) *BotMenuCategoriesUp
 	for _, sub := range subs {
 		label := fmt.Sprintf("%s (%d)", sub.Category.Name, sub.Unread)
 		btn := m.Menu.Data(label, "btnMenuCategoriesUpdates", sub.Category.ID)
+		rows = append(rows, m.Menu.Row(btn))
+	}
+	m.Menu.Inline(rows...)
+	return m
+}
+
+const BotMenuBtnSelectCategoryID = "btnMenuSelectCategory"
+
+type BotMenuSelectCategories struct {
+	Menu *telebot.ReplyMarkup
+}
+
+func NewBotMenuSelectCategories(subs []model.Subscription) *BotMenuSelectCategories {
+	m := &BotMenuSelectCategories{
+		Menu: &telebot.ReplyMarkup{},
+	}
+	rows := make([]telebot.Row, 0, len(subs))
+	for _, sub := range subs {
+		label := sub.Category.Name
+		if sub.Subscribed {
+			label = "✅ " + label
+		}
+		btn := m.Menu.Data(label, BotMenuBtnSelectCategoryID, sub.Category.ID)
 		rows = append(rows, m.Menu.Row(btn))
 	}
 	m.Menu.Inline(rows...)

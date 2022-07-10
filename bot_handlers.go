@@ -22,7 +22,7 @@ func (a *App) botHandleStartCmd(ctx context.Context, m *telebot.Message) {
 	a.botHandleMenuCmd(ctx, m)
 }
 
-// botHandleStartCmd handles /menu command.
+// botHandleMenuCmd handles /menu command.
 //   Shows main menu.
 func (a *App) botHandleMenuCmd(ctx context.Context, m *telebot.Message) {
 	user := ctx.Value(BotCtxUser).(*model.Subscriber)
@@ -42,20 +42,71 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 
 	subs, err := a.SubscriptionModel.GetSubscriptionStatus(ctx, user)
 	if err != nil {
-		log.Printf("botHandleCheckUpdatesCallback: subscription status: %v", err)
-		_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
+		log.Printf("[bot] botHandleCheckUpdatesCallback(): subscription status: %v", err)
 		return
 	}
-	_, _ = a.Bot.Edit(
+	if _, err := a.Bot.Edit(
 		cb.Message,
 		fmt.Sprintf("Your updates"),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 		NewBotMenuCategoriesUpdates(subs).Menu,
-	)
+	); err != nil {
+		log.Printf("[bot] botHandleCheckUpdatesCallback(): Failed to edit message: %v", err)
+	}
 	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
 
-// botHandleStartCmd handles /delete command.
+// botHandleCheckUpdatesCallback handles request to show the list of categories available for subscription.
+func (a *App) botHandleSelectCategoriesCallback(ctx context.Context, cb *telebot.Callback) {
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
+
+	subs, err := a.SubscriptionModel.GetSubscriptionStatus(ctx, user)
+	if err != nil {
+		log.Printf("[bot] botHandleSelectCategoriesCallback(): subscription status: %v", err)
+		return
+	}
+	if _, err := a.Bot.Edit(
+		cb.Message,
+		fmt.Sprintf("Select categories for which you would like to recieve updates:"),
+		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+		NewBotMenuSelectCategories(subs).Menu,
+	); err != nil {
+		log.Printf("[bot] botHandleSelectCategoriesCallback(): Failed to edit message: %v", err)
+	}
+	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
+}
+
+// botHandleSelectCategoryCallback toggles selection of a category.
+func (a *App) botHandleSelectCategoryCallback(ctx context.Context, cb *telebot.Callback) {
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
+
+	cat, err := a.CategoryModel.Get(ctx, cb.Data)
+	if err != nil {
+		log.Printf("[bot] botHandleSelectCategoryCallback(): get category: %v", err)
+		return
+	}
+	if err := a.SubscriptionModel.Subscribe(ctx, user, *cat); err != nil {
+		log.Printf("[bot] botHandleSelectCategoryCallback(): subscribe: %v", err)
+		return
+	}
+
+	subs, err := a.SubscriptionModel.GetSubscriptionStatus(ctx, user)
+	if err != nil {
+		log.Printf("[bot] botHandleSelectCategoryCallback(): subscription status: %v", err)
+		return
+	}
+	if _, err := a.Bot.Edit(
+		cb.Message,
+		fmt.Sprintf("Select categories for which you would like to recieve updates:"),
+		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+		NewBotMenuSelectCategories(subs).Menu,
+	); err != nil {
+		log.Printf("[bot] botHandleSelectCategoryCallback(): Failed to edit message: %v", err)
+	}
+	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
+}
+
+// botHandleDeleteCmd handles /delete command.
 //   Provides user with a choise to delete his data from the service.
 //   - Confirm action will be handled by botHandleDeleteConfirmCallback
 //   - Cancel action will be handled by botHandleDeleteCancelCallback
