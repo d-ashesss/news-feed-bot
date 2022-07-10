@@ -45,11 +45,17 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 		log.Printf("[bot] botHandleCheckUpdatesCallback(): subscription status: %v", err)
 		return
 	}
+	selectedSubs := make([]model.Subscription, 0, len(subs))
+	for _, sub := range subs {
+		if sub.Subscribed {
+			selectedSubs = append(selectedSubs, sub)
+		}
+	}
 	if _, err := a.Bot.Edit(
 		cb.Message,
 		fmt.Sprintf("Your updates"),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
-		NewBotMenuCategoriesUpdates(subs).Menu,
+		NewBotMenuCategoriesUpdates(selectedSubs).Menu,
 	); err != nil {
 		log.Printf("[bot] botHandleCheckUpdatesCallback(): Failed to edit message: %v", err)
 	}
