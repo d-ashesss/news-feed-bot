@@ -19,6 +19,7 @@ func (a *App) botHandleStartCmd(ctx context.Context, m *telebot.Message) {
 	); err != nil {
 		log.Printf("[bot] botHandleStartCmd() Failed to reply: %v", err)
 	}
+	a.botHandleMenuCmd(ctx, m)
 }
 
 // botHandleStartCmd handles /menu command.
@@ -29,9 +30,38 @@ func (a *App) botHandleMenuCmd(ctx context.Context, m *telebot.Message) {
 		m.Sender,
 		fmt.Sprintf("Your menu, *%s*: 🗒", user.ID),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+		NewBotMenuMain().Menu,
 	); err != nil {
 		log.Printf("[bot] botHandleMenuCmd() Failed to reply: %v", err)
 	}
+}
+
+// botHandleCheckUpdatesCallback handles request to show unread updates.
+func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Callback) {
+	userID := fmt.Sprintf("telegram:%d", cb.Sender.ID)
+	s, err := a.SubscriberModel.Get(ctx, userID)
+	if err == model.ErrNotFound {
+		s = model.NewSubscriber(userID)
+		_, err = a.SubscriberModel.Create(ctx, s)
+	}
+	if err != nil {
+		log.Printf("botHandleCheckUpdatesCallback: get subscriber: %v", err)
+		_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
+		return
+	}
+	subs, err := a.SubscriptionModel.GetSubscriptionStatus(ctx, s)
+	if err != nil {
+		log.Printf("botHandleCheckUpdatesCallback: subscription status: %v", err)
+		_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
+		return
+	}
+	_, _ = a.Bot.Edit(
+		cb.Message,
+		fmt.Sprintf("Your updates"),
+		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+		NewBotMenuCategoriesUpdates(subs).Menu,
+	)
+	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
 
 // botHandleStartCmd handles /delete command.

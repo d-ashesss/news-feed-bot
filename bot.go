@@ -47,6 +47,9 @@ func (a *App) SetBot(bot *bot.Bot) error {
 	a.Bot.Handle("/menu", a.botHandleMessage(botCtx, a.botHandleMenuCmd))
 	a.Bot.Handle("/delete", a.botHandleMessage(botCtx, a.botHandleDeleteCmd))
 
+	menuMain := NewBotMenuMain()
+	a.Bot.Handle(&menuMain.BtnCheckUpdates, a.botHandleCallback(botCtx, a.botHandleCheckUpdatesCallback))
+
 	menuDelete := NewBotMenuDelete()
 	a.Bot.Handle(&menuDelete.BtnConfirm, a.botHandleCallback(botCtx, a.botHandleDeleteConfirmCallback))
 	a.Bot.Handle(&menuDelete.BtnCancel, a.botHandleCallback(botCtx, a.botHandleDeleteCancelCallback))

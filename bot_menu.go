@@ -1,6 +1,42 @@
 package main
 
-import "gopkg.in/tucnak/telebot.v2"
+import (
+	"github.com/d-ashesss/news-feed-bot/pkg/model"
+	"gopkg.in/tucnak/telebot.v2"
+)
+
+const (
+	BotMenuMainBtnCheckUpdatesLabel = "Check for updates"
+	BotMenuMainBtnCheckUpdatesID    = "btnMenuMainCheckUpdates"
+)
+
+type BotMenuMain struct {
+	Menu *telebot.ReplyMarkup
+
+	BtnCheckUpdates telebot.Btn
+}
+
+func NewBotMenuMain() *BotMenuMain {
+	m := &BotMenuMain{
+		Menu: &telebot.ReplyMarkup{},
+	}
+	m.BtnCheckUpdates = m.Menu.Data(BotMenuMainBtnCheckUpdatesLabel, BotMenuMainBtnCheckUpdatesID)
+	m.Menu.Inline(
+		m.Menu.Row(m.BtnCheckUpdates),
+	)
+	return m
+}
+
+type BotMenuCategoriesUpdates struct {
+	Menu *telebot.ReplyMarkup
+}
+
+func NewBotMenuCategoriesUpdates(_ []model.Subscription) *BotMenuCategoriesUpdates {
+	m := &BotMenuCategoriesUpdates{
+		Menu: &telebot.ReplyMarkup{},
+	}
+	return m
+}
 
 const (
 	BotMenuDeleteBtnConfirmLabel = "✔️ Confirm"
