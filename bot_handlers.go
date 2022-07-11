@@ -64,9 +64,9 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 	} else {
 		if _, err := a.Bot.Edit(
 			cb.Message,
-			fmt.Sprintf("Your updates"),
+			fmt.Sprintf("Unread updates in categories you've selected:"),
 			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
-			NewBotMenuCategoriesUpdates(selectedSubs).Menu,
+			NewBotMenuCategoryUpdates(selectedSubs).Menu,
 		); err != nil {
 			log.Printf("[bot] botHandleCheckUpdatesCallback(): Failed to edit message: %v", err)
 		}
@@ -149,7 +149,7 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 			NewBotMenuNoUpdatesInCategory().Menu,
 		); err != nil {
-			log.Printf("[bot] botHandleToggleCategoryCallback(): Failed to edit message: %v", err)
+			log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to edit message: %v", err)
 		}
 		return
 	}

@@ -68,14 +68,14 @@ func NewBotMenuNoCategoriesSelected() *BotMenuNoCategoriesSelected {
 	return m
 }
 
-type BotMenuCategoriesUpdates struct {
+type BotMenuCategoryUpdates struct {
 	Menu *telebot.ReplyMarkup
 }
 
 const BotMenuBtnCategoryUpdatesID = "btnMenuCategoryUpdates"
 
-func NewBotMenuCategoriesUpdates(subs []model.Subscription) *BotMenuCategoriesUpdates {
-	m := &BotMenuCategoriesUpdates{
+func NewBotMenuCategoryUpdates(subs []model.Subscription) *BotMenuCategoryUpdates {
+	m := &BotMenuCategoryUpdates{
 		Menu: &telebot.ReplyMarkup{},
 	}
 	rows := make([]telebot.Row, 0, len(subs))
