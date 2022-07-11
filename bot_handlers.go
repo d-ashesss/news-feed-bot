@@ -6,6 +6,7 @@ import (
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"gopkg.in/tucnak/telebot.v2"
 	"log"
+	"time"
 )
 
 // botHandleStartCmd handles /start command.
@@ -157,8 +158,14 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 		return
 	}
 
-	log.Printf("botHandleCategoryUpdatesCallback: %v", up)
-	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
+	if _, err := a.Bot.Send(
+		cb.Sender,
+		fmt.Sprintf("*%s*\n%s", up.Title, up.Date.Format(time.RFC1123)),
+		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+	); err != nil {
+		log.Printf("[bot] botHandleToggleCategoryCallback(): Failed to show update: %v", err)
+	}
+	_ = a.Bot.Respond(cb)
 }
 
 // botHandleDeleteCmd handles /delete command.
