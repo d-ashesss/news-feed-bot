@@ -68,20 +68,6 @@ func (m subscriptionModel) Unsubscribe(ctx context.Context, s *model.Subscriber,
 	return nil
 }
 
-// subscribed shows subscription status for a given model.Category.
-func (m subscriptionModel) subscribed(ctx context.Context, s *model.Subscriber, c model.Category) (bool, error) {
-	sub, err := m.subscriberModel.Get(ctx, s.UserID)
-	if err != nil {
-		return false, model.ErrInvalidSubscriber
-	}
-	for _, cat := range sub.Categories {
-		if cat.ID == c.ID {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func (m subscriptionModel) GetSubscriptionStatus(ctx context.Context, s *model.Subscriber) ([]model.Subscription, error) {
 	if s == nil {
 		return nil, model.ErrInvalidSubscriber
@@ -92,7 +78,7 @@ func (m subscriptionModel) GetSubscriptionStatus(ctx context.Context, s *model.S
 	}
 	subs := make([]model.Subscription, len(cats))
 	for i := range cats {
-		subscribed, _ := m.subscribed(ctx, s, cats[i])
+		subscribed := s.HasCategory(cats[i])
 		unread, _ := m.updateModel.GetCountInCategory(ctx, s, &cats[i])
 
 		subs[i] = model.Subscription{

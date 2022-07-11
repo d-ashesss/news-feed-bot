@@ -30,6 +30,15 @@ func (s *Subscriber) RemoveCategory(c Category) {
 	s.Categories = subs
 }
 
+func (s *Subscriber) HasCategory(c Category) bool {
+	for _, cat := range s.Categories {
+		if cat.ID == c.ID {
+			return true
+		}
+	}
+	return false
+}
+
 // SubscriberModel is a data model for Subscriber.
 type SubscriberModel interface {
 	// Create saves a Subscriber entity into the DB.
