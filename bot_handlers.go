@@ -82,23 +82,30 @@ func (a *App) botHandleSelectCategoriesCallback(ctx context.Context, cb *telebot
 	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
 
-// botHandleSelectCategoryCallback toggles selection of a category.
-func (a *App) botHandleSelectCategoryCallback(ctx context.Context, cb *telebot.Callback) {
+// botHandleToggleCategoryCallback toggles selection of a category.
+func (a *App) botHandleToggleCategoryCallback(ctx context.Context, cb *telebot.Callback) {
 	user := ctx.Value(BotCtxUser).(*model.Subscriber)
 
 	cat, err := a.CategoryModel.Get(ctx, cb.Data)
 	if err != nil {
-		log.Printf("[bot] botHandleSelectCategoryCallback(): get category: %v", err)
+		log.Printf("[bot] botHandleToggleCategoryCallback(): get category: %v", err)
 		return
 	}
-	if err := a.SubscriptionModel.Subscribe(ctx, user, *cat); err != nil {
-		log.Printf("[bot] botHandleSelectCategoryCallback(): subscribe: %v", err)
-		return
+	if user.HasCategory(*cat) {
+		if err := a.SubscriptionModel.Unsubscribe(ctx, user, *cat); err != nil {
+			log.Printf("[bot] botHandleToggleCategoryCallback(): unsubscribe: %v", err)
+			return
+		}
+	} else {
+		if err := a.SubscriptionModel.Subscribe(ctx, user, *cat); err != nil {
+			log.Printf("[bot] botHandleToggleCategoryCallback(): subscribe: %v", err)
+			return
+		}
 	}
 
 	subs, err := a.SubscriptionModel.GetSubscriptionStatus(ctx, user)
 	if err != nil {
-		log.Printf("[bot] botHandleSelectCategoryCallback(): subscription status: %v", err)
+		log.Printf("[bot] botHandleToggleCategoryCallback(): subscription status: %v", err)
 		return
 	}
 	if _, err := a.Bot.Edit(
@@ -107,7 +114,7 @@ func (a *App) botHandleSelectCategoryCallback(ctx context.Context, cb *telebot.C
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 		NewBotMenuSelectCategories(subs).Menu,
 	); err != nil {
-		log.Printf("[bot] botHandleSelectCategoryCallback(): Failed to edit message: %v", err)
+		log.Printf("[bot] botHandleToggleCategoryCallback(): Failed to edit message: %v", err)
 	}
 	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }

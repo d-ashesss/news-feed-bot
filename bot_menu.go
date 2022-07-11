@@ -52,7 +52,7 @@ func NewBotMenuCategoriesUpdates(subs []model.Subscription) *BotMenuCategoriesUp
 	return m
 }
 
-const BotMenuBtnSelectCategoryID = "btnMenuSelectCategory"
+const BotMenuBtnToggleCategoryID = "btnMenuToggleCategory"
 
 type BotMenuSelectCategories struct {
 	Menu *telebot.ReplyMarkup
@@ -68,7 +68,7 @@ func NewBotMenuSelectCategories(subs []model.Subscription) *BotMenuSelectCategor
 		if sub.Subscribed {
 			label = "✅ " + label
 		}
-		btn := m.Menu.Data(label, BotMenuBtnSelectCategoryID, sub.Category.ID)
+		btn := m.Menu.Data(label, BotMenuBtnToggleCategoryID, sub.Category.ID)
 		rows = append(rows, m.Menu.Row(btn))
 	}
 	m.Menu.Inline(rows...)

@@ -51,7 +51,7 @@ func (a *App) SetBot(bot *bot.Bot) error {
 	a.Bot.Handle(&menuMain.BtnCheckUpdates, a.botHandleCallback(botCtx, a.botHandleCheckUpdatesCallback))
 	a.Bot.Handle(&menuMain.BtnSelectCategories, a.botHandleCallback(botCtx, a.botHandleSelectCategoriesCallback))
 
-	a.Bot.Handle(&telebot.Btn{Unique: BotMenuBtnSelectCategoryID}, a.botHandleCallback(botCtx, a.botHandleSelectCategoryCallback))
+	a.Bot.Handle(&telebot.Btn{Unique: BotMenuBtnToggleCategoryID}, a.botHandleCallback(botCtx, a.botHandleToggleCategoryCallback))
 
 	menuDelete := NewBotMenuDelete()
 	a.Bot.Handle(&menuDelete.BtnConfirm, a.botHandleCallback(botCtx, a.botHandleDeleteConfirmCallback))
