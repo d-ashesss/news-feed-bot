@@ -34,6 +34,23 @@ func NewBotMenuMain() *BotMenuMain {
 	return m
 }
 
+type BotMenuNoUpdatesInCategory struct {
+	Menu *telebot.ReplyMarkup
+
+	BtnCheckUpdates telebot.Btn
+}
+
+func NewBotMenuNoUpdatesInCategory() *BotMenuNoUpdatesInCategory {
+	m := &BotMenuNoUpdatesInCategory{
+		Menu: &telebot.ReplyMarkup{},
+	}
+	m.BtnCheckUpdates = m.Menu.Data(BotMenuMainBtnCheckUpdatesLabel, BotMenuMainBtnCheckUpdatesID)
+	m.Menu.Inline(
+		m.Menu.Row(m.BtnCheckUpdates),
+	)
+	return m
+}
+
 type BotMenuNoCategoriesSelected struct {
 	Menu *telebot.ReplyMarkup
 
@@ -55,6 +72,8 @@ type BotMenuCategoriesUpdates struct {
 	Menu *telebot.ReplyMarkup
 }
 
+const BotMenuBtnCategoryUpdatesID = "btnMenuCategoryUpdates"
+
 func NewBotMenuCategoriesUpdates(subs []model.Subscription) *BotMenuCategoriesUpdates {
 	m := &BotMenuCategoriesUpdates{
 		Menu: &telebot.ReplyMarkup{},
@@ -62,7 +81,7 @@ func NewBotMenuCategoriesUpdates(subs []model.Subscription) *BotMenuCategoriesUp
 	rows := make([]telebot.Row, 0, len(subs))
 	for _, sub := range subs {
 		label := fmt.Sprintf("%s (%d)", sub.Category.Name, sub.Unread)
-		btn := m.Menu.Data(label, "btnMenuCategoriesUpdates", sub.Category.ID)
+		btn := m.Menu.Data(label, BotMenuBtnCategoryUpdatesID, sub.Category.ID)
 		rows = append(rows, m.Menu.Row(btn))
 	}
 	m.Menu.Inline(rows...)

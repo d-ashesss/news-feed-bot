@@ -130,6 +130,37 @@ func (a *App) botHandleToggleCategoryCallback(ctx context.Context, cb *telebot.C
 	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
 
+// botHandleCategoryUpdatesCallback shows the oldest update from selected category.
+func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.Callback) {
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
+
+	cat, err := a.CategoryModel.Get(ctx, cb.Data)
+	if err != nil {
+		log.Printf("[bot] botHandleCategoryUpdatesCallback(): get category: %v", err)
+		return
+	}
+
+	up, err := a.SubscriptionModel.ShiftUpdate(ctx, user, *cat)
+	if err == model.ErrNoUpdates {
+		if _, err := a.Bot.Edit(
+			cb.Message,
+			fmt.Sprintf("You don't have any updates available in category *%v*", cat.Name),
+			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+			NewBotMenuNoUpdatesInCategory().Menu,
+		); err != nil {
+			log.Printf("[bot] botHandleToggleCategoryCallback(): Failed to edit message: %v", err)
+		}
+		return
+	}
+	if err != nil {
+		log.Printf("[bot] botHandleCategoryUpdatesCallback(): shift update: %v", err)
+		return
+	}
+
+	log.Printf("botHandleCategoryUpdatesCallback: %v", up)
+	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
+}
+
 // botHandleDeleteCmd handles /delete command.
 //   Provides user with a choise to delete his data from the service.
 //   - Confirm action will be handled by botHandleDeleteConfirmCallback
