@@ -34,6 +34,23 @@ func NewBotMenuMain() *BotMenuMain {
 	return m
 }
 
+type BotMenuNoCategoriesSelected struct {
+	Menu *telebot.ReplyMarkup
+
+	BtnSelectCategories telebot.Btn
+}
+
+func NewBotMenuNoCategoriesSelected() *BotMenuNoCategoriesSelected {
+	m := &BotMenuNoCategoriesSelected{
+		Menu: &telebot.ReplyMarkup{},
+	}
+	m.BtnSelectCategories = m.Menu.Data(BotMenuMainBtnSelectCategoriesLabel, BotMenuMainBtnSelectCategoriesID)
+	m.Menu.Inline(
+		m.Menu.Row(m.BtnSelectCategories),
+	)
+	return m
+}
+
 type BotMenuCategoriesUpdates struct {
 	Menu *telebot.ReplyMarkup
 }

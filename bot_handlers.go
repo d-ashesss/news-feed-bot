@@ -51,13 +51,24 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 			selectedSubs = append(selectedSubs, sub)
 		}
 	}
-	if _, err := a.Bot.Edit(
-		cb.Message,
-		fmt.Sprintf("Your updates"),
-		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
-		NewBotMenuCategoriesUpdates(selectedSubs).Menu,
-	); err != nil {
-		log.Printf("[bot] botHandleCheckUpdatesCallback(): Failed to edit message: %v", err)
+	if len(selectedSubs) == 0 {
+		if _, err := a.Bot.Edit(
+			cb.Message,
+			fmt.Sprintf("You don't have any categories selected"),
+			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+			NewBotMenuNoCategoriesSelected().Menu,
+		); err != nil {
+			log.Printf("[bot] botHandleCheckUpdatesCallback(): Failed to edit message: %v", err)
+		}
+	} else {
+		if _, err := a.Bot.Edit(
+			cb.Message,
+			fmt.Sprintf("Your updates"),
+			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+			NewBotMenuCategoriesUpdates(selectedSubs).Menu,
+		); err != nil {
+			log.Printf("[bot] botHandleCheckUpdatesCallback(): Failed to edit message: %v", err)
+		}
 	}
 	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
