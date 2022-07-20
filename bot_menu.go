@@ -88,6 +88,24 @@ func NewBotMenuCategoryUpdates(subs []model.Subscription) *BotMenuCategoryUpdate
 	return m
 }
 
+type BotMenuCategoryNextUpdate struct {
+	Menu *telebot.ReplyMarkup
+}
+
+const (
+	BotMenuBtnCategoryNextUpdateLabel = "Next"
+	BotMenuBtnCategoryNextUpdateID    = "btnMenuCategoryNextUpdate"
+)
+
+func NewBotMenuCategoryNextUpdate(cat *model.Category) *BotMenuCategoryNextUpdate {
+	m := &BotMenuCategoryNextUpdate{
+		Menu: &telebot.ReplyMarkup{},
+	}
+	b := m.Menu.Data(BotMenuBtnCategoryNextUpdateLabel, BotMenuBtnCategoryNextUpdateID, cat.ID)
+	m.Menu.Inline(m.Menu.Row(b))
+	return m
+}
+
 const BotMenuBtnToggleCategoryID = "btnMenuToggleCategory"
 
 type BotMenuSelectCategories struct {

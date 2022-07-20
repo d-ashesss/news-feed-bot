@@ -162,10 +162,20 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 		cb.Sender,
 		fmt.Sprintf("*%s*\n%s", up.Title, up.Date.Format(time.RFC1123)),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+		NewBotMenuCategoryNextUpdate(cat).Menu,
 	); err != nil {
-		log.Printf("[bot] botHandleToggleCategoryCallback(): Failed to show update: %v", err)
+		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to show update: %v", err)
 	}
-	_ = a.Bot.Respond(cb)
+}
+
+// botHandleNextUpdateCallback removes the menu from previous update
+// and shows the oldest update from selected category.
+func (a *App) botHandleNextUpdateCallback(ctx context.Context, cb *telebot.Callback) {
+	if _, err := a.Bot.Edit(cb.Message, &telebot.ReplyMarkup{}); err != nil {
+		log.Printf("[bot] botHandleNextUpdateCallback(): Failed to remove menu from update: %v", err)
+	}
+
+	a.botHandleCategoryUpdatesCallback(ctx, cb)
 }
 
 // botHandleDeleteCmd handles /delete command.
