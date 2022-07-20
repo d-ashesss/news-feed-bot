@@ -71,7 +71,6 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 			log.Printf("[bot] botHandleCheckUpdatesCallback(): Failed to edit message: %v", err)
 		}
 	}
-	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
 
 // botHandleCheckUpdatesCallback handles request to show the list of categories available for subscription.
@@ -91,7 +90,6 @@ func (a *App) botHandleSelectCategoriesCallback(ctx context.Context, cb *telebot
 	); err != nil {
 		log.Printf("[bot] botHandleSelectCategoriesCallback(): Failed to edit message: %v", err)
 	}
-	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
 
 // botHandleToggleCategoryCallback toggles selection of a category.
@@ -128,7 +126,6 @@ func (a *App) botHandleToggleCategoryCallback(ctx context.Context, cb *telebot.C
 	); err != nil {
 		log.Printf("[bot] botHandleToggleCategoryCallback(): Failed to edit message: %v", err)
 	}
-	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
 
 // botHandleCategoryUpdatesCallback shows the oldest update from selected category.
@@ -221,7 +218,6 @@ func (a *App) botHandleDeleteConfirmCallback(ctx context.Context, cb *telebot.Ca
 	); err != nil {
 		log.Printf("[bot] botHandleDeleteConfirmCallback() Failed to reply: %v", err)
 	}
-	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
 
 // botHandleDeleteCancelCallback handles cancellation callback of Delete User menu.
@@ -235,7 +231,6 @@ func (a *App) botHandleDeleteCancelCallback(ctx context.Context, cb *telebot.Cal
 	); err != nil {
 		log.Printf("[bot] botHandleDeleteCancelCallback() Failed to edit message: %v", err)
 	}
-	_ = a.Bot.Respond(cb, &telebot.CallbackResponse{Text: ""})
 }
 
 // botHandleTextMessage is an arbitrary method to handle any text message that was not handled by a specific handler.
