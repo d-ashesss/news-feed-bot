@@ -77,6 +77,16 @@ func (m updateModel) Delete(ctx context.Context, up *model.Update) error {
 	return nil
 }
 
+func (m updateModel) DeleteForSubscriber(ctx context.Context, s *model.Subscriber) error {
+	var ups []model.Update
+	q := m.req().ToCollection(model.Update{Subscriber: s}).Query
+	if err := m.req().SetLoadPaths(firestorm.AllEntities).QueryEntities(ctx, q, &ups)(); err != nil {
+		return err
+	}
+	_ = m.req().DeleteEntities(ctx, ups)()
+	return nil
+}
+
 // req is a shortcut to firestorm.FSClient.NewRequest().
 func (m updateModel) req() *firestorm.Request {
 	return m.fsc.NewRequest()

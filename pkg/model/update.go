@@ -24,4 +24,6 @@ type UpdateModel interface {
 	GetCountInCategory(ctx context.Context, s *Subscriber, cat *Category) (int, error)
 	// Delete deletes an Update entity from the DB.
 	Delete(ctx context.Context, up *Update) error
+	// DeleteForSubscriber deletes all Update's for the Subscriber.
+	DeleteForSubscriber(ctx context.Context, s *Subscriber) error
 }
