@@ -41,8 +41,8 @@ func main() {
 	httpServer := http.NewServer(config.WebPort)
 
 	categoryModel := firestoreDb.NewCategoryModel(fstore)
-	subscriberModel := firestoreDb.NewSubscriberModel(fstore)
 	updateModel := firestoreDb.NewUpdateModel(fstore)
+	subscriberModel := firestoreDb.NewSubscriberModel(fstore, updateModel)
 	subscriptionModel := firestoreDb.NewSubscriptionModel(fstore, categoryModel, subscriberModel, updateModel)
 
 	app := NewApp(config, httpServer, categoryModel, subscriberModel, subscriptionModel)

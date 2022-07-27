@@ -22,7 +22,9 @@ func TestSubscriberModel(t *testing.T) {
 	}
 	resetData(t, ctx, fsc)
 
-	subscriberModel := firestoreDb.NewSubscriberModel(fsc)
+	categoryModel := firestoreDb.NewCategoryModel(fsc)
+	updateModel := firestoreDb.NewUpdateModel(fsc)
+	subscriberModel := firestoreDb.NewSubscriberModel(fsc, updateModel)
 
 	s1 := model.NewSubscriber("U1")
 
@@ -101,6 +103,38 @@ func TestSubscriberModel(t *testing.T) {
 			}
 			if _, err := subscriberModel.Get(ctx, s1.UserID); err != model.ErrNotFound {
 				t.Errorf("Get(%q): got %q; want ErrNotFound for deleted subscriber", s1.UserID, err)
+			}
+		})
+
+		t.Run("deleted updates", func(t *testing.T) {
+			cat := model.NewCategory("CatX")
+			if _, err := categoryModel.Create(ctx, cat); err != nil {
+				t.Fatalf("categoryModel.Create(%v): %v", cat, err)
+			}
+			defer func(t *testing.T) {
+				t.Helper()
+				if err := categoryModel.Delete(ctx, cat); err != nil {
+					t.Fatalf("categoryModel.Delete(%q): %v", cat.Name, err)
+				}
+			}(t)
+			s := &model.Subscriber{UserID: "Sx"}
+			if _, err := subscriberModel.Create(ctx, s); err != nil {
+				t.Fatalf("subscriberModel.Create(%v): %v", s, err)
+			}
+			up := &model.Update{Subscriber: s, Category: cat, Title: "CatXUpX"}
+			if _, err := updateModel.Create(ctx, up); err != nil {
+				t.Fatalf("updateModel.Create(%v): %v", up, err)
+			}
+			if err := subscriberModel.Delete(ctx, s); err != nil {
+				t.Fatalf("subscriberModel.Delete(%q): %v", s.UserID, err)
+			}
+			count, err := updateModel.GetCountInCategory(ctx, s, cat)
+			if err != nil {
+				t.Fatalf("updateModel.GetFromCategory(%q, %q): %v", s.UserID, cat.Name, err)
+				return
+			}
+			if count != 0 {
+				t.Fatalf("updateModel.GetFromCategory(%q, %q): = %d; want 0", s.UserID, cat.Name, count)
 			}
 		})
 	})

@@ -24,8 +24,8 @@ func TestSubscriptionModel(t *testing.T) {
 	resetData(t, ctx, fsc)
 
 	categoryModel := firestoreDb.NewCategoryModel(fsc)
-	subscriberModel := firestoreDb.NewSubscriberModel(fsc)
 	updateModel := firestoreDb.NewUpdateModel(fsc)
+	subscriberModel := firestoreDb.NewSubscriberModel(fsc, updateModel)
 	subscriptionModel := firestoreDb.NewSubscriptionModel(fsc, categoryModel, subscriberModel, updateModel)
 
 	cat1 := model.NewCategory("Cat1")
