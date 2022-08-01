@@ -51,9 +51,9 @@ func (a *App) SetBot(bot *bot.Bot) error {
 	a.Bot.Handle(&menuMain.BtnCheckUpdates, a.botHandleCallback(botCtx, a.botHandleCheckUpdatesCallback))
 	a.Bot.Handle(&menuMain.BtnSelectCategories, a.botHandleCallback(botCtx, a.botHandleSelectCategoriesCallback))
 
-	a.Bot.Handle(&telebot.Btn{Unique: BotMenuBtnToggleCategoryID}, a.botHandleCallback(botCtx, a.botHandleToggleCategoryCallback))
-	a.Bot.Handle(&telebot.Btn{Unique: BotMenuBtnCategoryUpdatesID}, a.botHandleCallback(botCtx, a.botHandleCategoryUpdatesCallback))
-	a.Bot.Handle(&telebot.Btn{Unique: BotMenuBtnCategoryNextUpdateID}, a.botHandleCallback(botCtx, a.botHandleNextUpdateCallback))
+	a.Bot.Handle(&telebot.Btn{Unique: BotMenuSelectCategoriesBtnToggleCategoryID}, a.botHandleCallback(botCtx, a.botHandleToggleCategoryCallback))
+	a.Bot.Handle(&telebot.Btn{Unique: BotMenuCategoryUpdatesBtnCategoryUpdatesID}, a.botHandleCallback(botCtx, a.botHandleCategoryUpdatesCallback))
+	a.Bot.Handle(&telebot.Btn{Unique: BotMenuCategoryNextUpdateBtnNextID}, a.botHandleCallback(botCtx, a.botHandleNextUpdateCallback))
 
 	menuDelete := NewBotMenuDelete()
 	a.Bot.Handle(&menuDelete.BtnConfirm, a.botHandleCallback(botCtx, a.botHandleDeleteConfirmCallback))

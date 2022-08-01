@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -10,8 +11,18 @@ type Update struct {
 	ID         string      // ID is an internal ID.
 	Subscriber *Subscriber // Subscriber is the receiver of the update.
 	Category   *Category   // Category is the category of the update.
+	FeedID     string      // FeedID is the external feed ID of the update.
 	Title      string      // Title is the title of the update.
 	Date       time.Time   // Date is the date when the update was published.
+	URL        string      // URL is the HTTP link to the publication.
+}
+
+func (up Update) FormatMessage() string {
+	return fmt.Sprintf(
+		"*%s*\n%s",
+		up.Title,
+		up.Date.Format(time.RFC1123),
+	)
 }
 
 // UpdateModel is a data model for Update.

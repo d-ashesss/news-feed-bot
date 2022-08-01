@@ -6,7 +6,6 @@ import (
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"gopkg.in/tucnak/telebot.v2"
 	"log"
-	"time"
 )
 
 // botHandleStartCmd handles /start command.
@@ -157,9 +156,9 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 
 	if _, err := a.Bot.Send(
 		cb.Sender,
-		fmt.Sprintf("*%s*\n%s", up.Title, up.Date.Format(time.RFC1123)),
+		up.FormatMessage(),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
-		NewBotMenuCategoryNextUpdate(cat).Menu,
+		NewBotMenuCategoryNextUpdate(cat, up.URL).Menu,
 	); err != nil {
 		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to show update: %v", err)
 	}
@@ -168,7 +167,7 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 // botHandleNextUpdateCallback removes the menu from previous update
 // and shows the oldest update from selected category.
 func (a *App) botHandleNextUpdateCallback(ctx context.Context, cb *telebot.Callback) {
-	if _, err := a.Bot.Edit(cb.Message, &telebot.ReplyMarkup{}); err != nil {
+	if _, err := a.Bot.Edit(cb.Message, NewUpdatedBotMenuUpdateURL(cb.Message.ReplyMarkup).Menu); err != nil {
 		log.Printf("[bot] botHandleNextUpdateCallback(): Failed to remove menu from update: %v", err)
 	}
 
@@ -199,9 +198,9 @@ func (a *App) botHandleNextUpdateCallback(ctx context.Context, cb *telebot.Callb
 
 	if _, err := a.Bot.Send(
 		cb.Sender,
-		fmt.Sprintf("*%s*\n%s", up.Title, up.Date.Format(time.RFC1123)),
+		up.FormatMessage(),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
-		NewBotMenuCategoryNextUpdate(cat).Menu,
+		NewBotMenuCategoryNextUpdate(cat, up.URL).Menu,
 	); err != nil {
 		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to show update: %v", err)
 	}
