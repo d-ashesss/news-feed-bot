@@ -154,8 +154,8 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 		return
 	}
 
-	if _, err := a.Bot.Send(
-		cb.Sender,
+	if _, err := a.Bot.Edit(
+		cb.Message,
 		up.FormatMessage(),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 		NewBotMenuCategoryNextUpdate(cat, up.URL).Menu,
