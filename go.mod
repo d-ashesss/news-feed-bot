@@ -12,11 +12,11 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/jschoedt/go-firestorm v0.0.0-20211213235205-e89522d7cefb
 	github.com/jschoedt/go-structmapper v0.0.0-20211214213425-8206c586ed36 // indirect
-	github.com/stretchr/testify v1.7.0
+	github.com/mmcdole/gofeed v1.1.3
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2 // indirect
 	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
-	google.golang.org/api v0.85.0
+	google.golang.org/api v0.85.0 // indirect
 	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f
 	gopkg.in/tucnak/telebot.v2 v2.3.5
 )
