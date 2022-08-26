@@ -63,6 +63,13 @@ func TestUpdateModel(t *testing.T) {
 	cat1up1 := &model.Update{Subscriber: s1, Category: cat1, Title: "Cat1Up1"}
 
 	t.Run("Create", func(t *testing.T) {
+		t.Run("nil update", func(t *testing.T) {
+			var up *model.Update
+			if _, err := updateModel.Create(ctx, up); err != model.ErrInvalidUpdate {
+				t.Errorf("Create(%v): got %q; want ErrInvalidUpdate", up, err)
+			}
+		})
+
 		t.Run("nil subscriber", func(t *testing.T) {
 			var s *model.Subscriber
 			up := model.Update{Subscriber: s, Category: cat1}
@@ -216,41 +223,87 @@ func TestUpdateModel(t *testing.T) {
 	})
 
 	t.Run("Delete", func(t *testing.T) {
-		if err := updateModel.Delete(ctx, cat1up1); err != nil {
-			t.Fatalf("Delete(%q): %v", cat1up1.Title, err)
-		}
-		if _, err = updateModel.GetFromCategory(ctx, s1, cat1); err != model.ErrNoUpdates {
-			t.Errorf("GetFromCategory(%q, %q): got %q; want ErrNoUpdates for deleted update", s1.UserID, cat2.Name, err)
-		}
+		t.Run("nil update", func(t *testing.T) {
+			var up *model.Update
+			if err := updateModel.Delete(ctx, up); err != model.ErrInvalidUpdate {
+				t.Errorf("Delete(%v): got %q; want ErrInvalidUpdate", up, err)
+			}
+		})
+
+		t.Run("empty update", func(t *testing.T) {
+			up := &model.Update{}
+			if err := updateModel.Delete(ctx, up); err != model.ErrInvalidUpdate {
+				t.Errorf("Delete(%v): got %q; want ErrInvalidUpdate", up, err)
+			}
+		})
+
+		t.Run("nil subscriber", func(t *testing.T) {
+			up := &model.Update{ID: "test"}
+			if err := updateModel.Delete(ctx, up); err != model.ErrInvalidSubscriber {
+				t.Errorf("Delete(%v): got %q; want ErrInvalidSubscriber", up, err)
+			}
+		})
+
+		t.Run("empty subscriber", func(t *testing.T) {
+			up := &model.Update{ID: "test", Subscriber: &model.Subscriber{}}
+			if err := updateModel.Delete(ctx, up); err != model.ErrInvalidSubscriber {
+				t.Errorf("Delete(%v): got %q; want ErrInvalidSubscriber", up, err)
+			}
+		})
+
+		t.Run("valid update", func(t *testing.T) {
+			if err := updateModel.Delete(ctx, cat1up1); err != nil {
+				t.Fatalf("Delete(%q): %v", cat1up1.Title, err)
+			}
+			if _, err = updateModel.GetFromCategory(ctx, s1, cat1); err != model.ErrNoUpdates {
+				t.Errorf("GetFromCategory(%q, %q): got %q; want ErrNoUpdates for deleted update", s1.UserID, cat2.Name, err)
+			}
+		})
 	})
 
 	t.Run("DeleteForSubscriber", func(t *testing.T) {
-		s := &model.Subscriber{UserID: "Sx"}
-		if _, err := subscriberModel.Create(ctx, s); err != nil {
-			t.Fatalf("subscriberModel.Create(%v): %v", s, err)
-		}
-		defer func(t *testing.T) {
-			t.Helper()
-			if err := subscriberModel.Delete(ctx, s); err != nil {
-				t.Fatalf("subscriberModel.Delete(%q): %v", s.UserID, err)
+		t.Run("nil subscriber", func(t *testing.T) {
+			var s *model.Subscriber
+			if err := updateModel.DeleteForSubscriber(ctx, s); err != model.ErrInvalidSubscriber {
+				t.Errorf("DeleteForSubscriber(%v): got %q; want ErrInvalidSubscriber", s, err)
 			}
-		}(t)
-		up := &model.Update{Subscriber: s, Category: cat1, Title: "Cat1UpX"}
-		if _, err := updateModel.Create(ctx, up); err != nil {
-			t.Fatalf("Create(%v): %v", up, err)
-		}
+		})
 
-		if err := updateModel.DeleteForSubscriber(ctx, s); err != nil {
-			t.Fatalf("DeleteForSubscriber(%q): %v", up.Title, err)
-		}
+		t.Run("empty subscriber", func(t *testing.T) {
+			s := &model.Subscriber{}
+			if err := updateModel.DeleteForSubscriber(ctx, s); err != model.ErrInvalidSubscriber {
+				t.Errorf("DeleteForSubscriber(%v): got %q; want ErrInvalidSubscriber", s, err)
+			}
+		})
 
-		count, err := updateModel.GetCountInCategory(ctx, s, cat1)
-		if err != nil {
-			t.Fatalf("GetFromCategory(%q, %q): %v", s.UserID, cat1.Name, err)
-			return
-		}
-		if count != 0 {
-			t.Fatalf("GetFromCategory(%q, %q): = %d; want 0", s.UserID, cat1.Name, count)
-		}
+		t.Run("valid subscriber", func(t *testing.T) {
+			s := &model.Subscriber{UserID: "Sx"}
+			if _, err := subscriberModel.Create(ctx, s); err != nil {
+				t.Fatalf("subscriberModel.Create(%v): %v", s, err)
+			}
+			defer func(t *testing.T) {
+				t.Helper()
+				if err := subscriberModel.Delete(ctx, s); err != nil {
+					t.Fatalf("subscriberModel.Delete(%q): %v", s.UserID, err)
+				}
+			}(t)
+			up := &model.Update{Subscriber: s, Category: cat1, Title: "Cat1UpX"}
+			if _, err := updateModel.Create(ctx, up); err != nil {
+				t.Fatalf("Create(%v): %v", up, err)
+			}
+
+			if err := updateModel.DeleteForSubscriber(ctx, s); err != nil {
+				t.Fatalf("DeleteForSubscriber(%q): %v", s.UserID, err)
+			}
+
+			count, err := updateModel.GetCountInCategory(ctx, s, cat1)
+			if err != nil {
+				t.Fatalf("GetFromCategory(%q, %q): %v", s.UserID, cat1.Name, err)
+				return
+			}
+			if count != 0 {
+				t.Fatalf("GetFromCategory(%q, %q): = %d; want 0", s.UserID, cat1.Name, count)
+			}
+		})
 	})
 }

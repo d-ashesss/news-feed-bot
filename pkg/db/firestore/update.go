@@ -18,6 +18,9 @@ func NewUpdateModel(c *firestore.Client) model.UpdateModel {
 }
 
 func (m updateModel) Create(ctx context.Context, up *model.Update) (string, error) {
+	if up == nil {
+		return "", model.ErrInvalidUpdate
+	}
 	if up.Subscriber == nil || len(up.Subscriber.ID) == 0 {
 		return "", model.ErrInvalidSubscriber
 	}
@@ -71,6 +74,12 @@ func (m updateModel) GetCountInCategory(ctx context.Context, s *model.Subscriber
 }
 
 func (m updateModel) Delete(ctx context.Context, up *model.Update) error {
+	if up == nil || len(up.ID) == 0 {
+		return model.ErrInvalidUpdate
+	}
+	if up.Subscriber == nil || len(up.Subscriber.ID) == 0 {
+		return model.ErrInvalidSubscriber
+	}
 	if err := m.req().DeleteEntities(ctx, up)(); err != nil {
 		return err
 	}
@@ -78,6 +87,9 @@ func (m updateModel) Delete(ctx context.Context, up *model.Update) error {
 }
 
 func (m updateModel) DeleteForSubscriber(ctx context.Context, s *model.Subscriber) error {
+	if s == nil || len(s.ID) == 0 {
+		return model.ErrInvalidSubscriber
+	}
 	var ups []model.Update
 	q := m.req().ToCollection(model.Update{Subscriber: s}).Query
 	if err := m.req().SetLoadPaths(firestorm.AllEntities).QueryEntities(ctx, q, &ups)(); err != nil {
