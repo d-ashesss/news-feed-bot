@@ -17,6 +17,15 @@ func New(subscriptionModel model.SubscriptionModel) *Fetcher {
 	return &Fetcher{subscriptionModel: subscriptionModel}
 }
 
+func (f Fetcher) GetTitle(ctx context.Context, URL string) (string, error) {
+	fp := gofeed.NewParser()
+	feed, err := fp.ParseURLWithContext(URL, ctx)
+	if err != nil {
+		return "", err
+	}
+	return feed.Title, nil
+}
+
 // Fetch reads posts from the feed into subscriptions.
 func (f Fetcher) Fetch(ctx context.Context, URL string, cat *model.Category) error {
 	fp := gofeed.NewParser()

@@ -7,7 +7,12 @@ import (
 	firestoreDb "github.com/d-ashesss/news-feed-bot/pkg/db/firestore"
 	"log"
 	"os"
+	"time"
 )
+
+func init() {
+	log.SetFlags(0)
+}
 
 func main() {
 	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
@@ -20,6 +25,7 @@ func main() {
 		log.Fatalf("failed to create firestore client: %v", err)
 	}
 
+	feedModel := firestoreDb.NewFeedModel(fsc)
 	categoryModel := firestoreDb.NewCategoryModel(fsc)
 
 	cats, err := categoryModel.GetAll(ctx)
@@ -29,5 +35,12 @@ func main() {
 
 	for _, cat := range cats {
 		fmt.Printf("%s: %s\n", cat.Name, cat.ID)
+		feeds, err := feedModel.GetAll(ctx, &cat)
+		if err != nil {
+			log.Printf("get %s feeds: %v", cat.Name, err)
+		}
+		for _, feed := range feeds {
+			fmt.Printf("\t%s %q [%s]: %s\n", feed.ID, feed.Title, feed.LastUpdate.Format(time.RFC822), feed.URL)
+		}
 	}
 }

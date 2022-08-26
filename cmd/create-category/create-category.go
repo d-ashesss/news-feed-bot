@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+func init() {
+	log.SetFlags(0)
+}
+
 func main() {
 	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	ctx := context.Background()
@@ -27,10 +31,10 @@ func main() {
 	}
 
 	categoryModel := firestoreDb.NewCategoryModel(fsc)
+
 	catName := getCatName(os.Args)
 	if len(catName) == 0 {
 		log.Fatalf("invalid category name")
-
 	}
 	cat := model.NewCategory(catName)
 	if _, err := categoryModel.Create(ctx, cat); err != nil {
