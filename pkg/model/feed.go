@@ -20,6 +20,7 @@ type FeedModel interface {
 	Get(ctx context.Context, cat *Category, id string) (*Feed, error)
 	// GetAll retrieves all Feed entities for provided Category from the DB.
 	GetAll(ctx context.Context, cat *Category) ([]Feed, error)
+	SetUpdated(ctx context.Context, f *Feed, u time.Time) error
 	// Delete deletes a Feed entity from the DB. Category property has to be set on Feed entity.
 	Delete(ctx context.Context, f *Feed) error
 }

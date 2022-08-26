@@ -9,6 +9,7 @@ import (
 	firestoreDb "github.com/d-ashesss/news-feed-bot/pkg/db/firestore"
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"testing"
+	"time"
 )
 
 func TestFeedModel(t *testing.T) {
@@ -140,6 +141,46 @@ func TestFeedModel(t *testing.T) {
 			wantNum := 1
 			if len(feeds) != wantNum {
 				t.Errorf("GetAll(%v): got %d feeds; want %d", cat1.Name, len(feeds), wantNum)
+			}
+		})
+	})
+
+	t.Run("SetUpdated", func(t *testing.T) {
+		t.Run("nil feed", func(t *testing.T) {
+			var f *model.Feed
+			u := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+			if err := feedModel.SetUpdated(ctx, f, u); err != model.ErrInvalidFeed {
+				t.Errorf("SetUpdated(%v): got %q; want ErrInvalidFeed", f, err)
+			}
+		})
+
+		t.Run("nil category", func(t *testing.T) {
+			f := &model.Feed{ID: "test"}
+			u := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+			if err := feedModel.SetUpdated(ctx, f, u); err != model.ErrInvalidCategory {
+				t.Errorf("SetUpdated(%v): got %q; want ErrInvalidCategory", f, err)
+			}
+		})
+
+		t.Run("invalid category", func(t *testing.T) {
+			f := &model.Feed{ID: "test", Category: &model.Category{}}
+			u := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+			if err := feedModel.SetUpdated(ctx, f, u); err != model.ErrInvalidCategory {
+				t.Errorf("SetUpdated(%v): got %q; want ErrInvalidCategory", f, err)
+			}
+		})
+
+		t.Run("valid feed", func(t *testing.T) {
+			u := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+			if err := feedModel.SetUpdated(ctx, cat1f1, u); err != nil {
+				t.Fatalf("SetUpdated(%q, %q): %v", cat1f1.Title, u.Format(time.RFC3339), err)
+			}
+			f, err := feedModel.Get(ctx, cat1, cat1f1.ID)
+			if err != nil {
+				t.Fatalf("Get(%q, %q): %v", cat1.Name, cat1f1.Title, err)
+			}
+			if !f.LastUpdate.Equal(u) {
+				t.Errorf("SetUpdated(%q): got %q; want %q", cat1f1.Title, f.LastUpdate.Format(time.RFC3339), u.Format(time.RFC3339))
 			}
 		})
 	})

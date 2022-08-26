@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"github.com/jschoedt/go-firestorm"
+	"time"
 )
 
 // FeedModel is a Firestore implementation of model.FeedModel.
@@ -28,6 +29,20 @@ func (m FeedModel) Create(ctx context.Context, f *model.Feed) (string, error) {
 		return "", err
 	}
 	return m.req().GetID(f), nil
+}
+
+func (m FeedModel) SetUpdated(ctx context.Context, f *model.Feed, u time.Time) error {
+	if f == nil {
+		return model.ErrInvalidFeed
+	}
+	if f.Category == nil || len(f.Category.ID) == 0 {
+		return model.ErrInvalidCategory
+	}
+	f.LastUpdate = u
+	if err := m.req().UpdateEntities(ctx, f)(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m FeedModel) Get(ctx context.Context, cat *model.Category, id string) (*model.Feed, error) {
@@ -54,7 +69,7 @@ func (m FeedModel) GetAll(ctx context.Context, cat *model.Category) ([]model.Fee
 	}
 	var feeds []model.Feed
 	q := m.req().ToCollection(model.Feed{Category: cat}).Query
-	if err := m.req().QueryEntities(ctx, q, &feeds)(); err != nil {
+	if err := m.req().SetLoadPaths(firestorm.AllEntities).QueryEntities(ctx, q, &feeds)(); err != nil {
 		return nil, err
 	}
 	return feeds, nil
