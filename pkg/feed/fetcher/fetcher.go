@@ -27,9 +27,9 @@ func (f Fetcher) GetTitle(ctx context.Context, URL string) (string, error) {
 }
 
 // Fetch reads posts from the feed into subscriptions.
-func (f Fetcher) Fetch(ctx context.Context, URL string, cat *model.Category) error {
+func (f Fetcher) Fetch(ctx context.Context, fd *model.Feed, cat *model.Category) error {
 	fp := gofeed.NewParser()
-	feed, err := fp.ParseURLWithContext(URL, ctx)
+	feed, err := fp.ParseURLWithContext(fd.URL, ctx)
 	if err != nil {
 		return err
 	}
@@ -42,6 +42,9 @@ func (f Fetcher) Fetch(ctx context.Context, URL string, cat *model.Category) err
 			Title:    i.Title,
 			Date:     i.PublishedParsed.UTC(),
 			URL:      i.Link,
+		}
+		if fd.LastUpdate.After(up.Date) {
+			continue
 		}
 		if err := f.subscriptionModel.AddUpdate(ctx, up); err != nil {
 			log.Printf("[fetcher] failed to save update: %v", err)
