@@ -36,6 +36,9 @@ func (f Fetcher) Fetch(ctx context.Context, fd *model.Feed, cat *model.Category)
 	log.Printf("[fetcher] fetching updates from feed %q [%s] for category %q", feed.Title, feed.Language, cat.Name)
 
 	for _, i := range feed.Items {
+		if i.PublishedParsed == nil {
+			continue
+		}
 		up := model.Update{
 			Category: cat,
 			FeedID:   i.GUID,
