@@ -9,12 +9,14 @@ import (
 )
 
 // botHandleStartCmd handles /start command.
-//   Shows welcome message.
+//
+//	Shows welcome message.
 func (a *App) botHandleStartCmd(ctx context.Context, m *telebot.Message) {
-	user := ctx.Value(BotCtxUser).(*model.Subscriber)
 	if _, err := a.Bot.Send(
 		m.Sender,
-		fmt.Sprintf("Welcome, *%s* 🎉", user.ID),
+		fmt.Sprintf("Welcome to this humble news bot!\n"+
+			"Here you can receive news updates from the most famous world news agencies in the categories that you choose for yourself!\n"+
+			"Please check out the menu to select the categories and start receiving the updates."),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 	); err != nil {
 		log.Printf("[bot] botHandleStartCmd() Failed to reply: %v", err)
@@ -23,12 +25,12 @@ func (a *App) botHandleStartCmd(ctx context.Context, m *telebot.Message) {
 }
 
 // botHandleMenuCmd handles /menu command.
-//   Shows main menu.
-func (a *App) botHandleMenuCmd(ctx context.Context, m *telebot.Message) {
-	user := ctx.Value(BotCtxUser).(*model.Subscriber)
+//
+//	Shows main menu.
+func (a *App) botHandleMenuCmd(_ context.Context, m *telebot.Message) {
 	if _, err := a.Bot.Send(
 		m.Sender,
-		fmt.Sprintf("Your menu, *%s*: 🗒", user.ID),
+		fmt.Sprintf("Please select the desired action:"),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 		NewBotMenuMain().Menu,
 	); err != nil {
@@ -79,6 +81,16 @@ func (a *App) botHandleSelectCategoriesCallback(ctx context.Context, cb *telebot
 	subs, err := a.SubscriptionModel.GetSubscriptionStatus(ctx, user)
 	if err != nil {
 		log.Printf("[bot] botHandleSelectCategoriesCallback(): subscription status: %v", err)
+		return
+	}
+	if len(subs) == 0 {
+		if _, err := a.Bot.Edit(
+			cb.Message,
+			fmt.Sprintf("Unfortunately I do not have any categories available at the moment, please come back later."),
+			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+		); err != nil {
+			log.Printf("[bot] botHandleSelectCategoriesCallback(): Failed to edit message: %v", err)
+		}
 		return
 	}
 	if _, err := a.Bot.Edit(
@@ -207,15 +219,14 @@ func (a *App) botHandleNextUpdateCallback(ctx context.Context, cb *telebot.Callb
 }
 
 // botHandleDeleteCmd handles /delete command.
-//   Provides user with a choise to delete his data from the service.
-//   - Confirm action will be handled by botHandleDeleteConfirmCallback
-//   - Cancel action will be handled by botHandleDeleteCancelCallback
-func (a *App) botHandleDeleteCmd(ctx context.Context, m *telebot.Message) {
-	user := ctx.Value(BotCtxUser).(*model.Subscriber)
-
+//
+//	Provides user with a choise to delete his data from the service.
+//	- Confirm action will be handled by botHandleDeleteConfirmCallback
+//	- Cancel action will be handled by botHandleDeleteCancelCallback
+func (a *App) botHandleDeleteCmd(_ context.Context, m *telebot.Message) {
 	if _, err := a.Bot.Send(
 		m.Sender,
-		fmt.Sprintf("You data is about to be deleted from our service, *%s* ♻", user.ID),
+		fmt.Sprintf("You data is about to be deleted from our service"),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 		NewBotMenuDelete().Menu,
 	); err != nil {
@@ -238,7 +249,7 @@ func (a *App) botHandleDeleteConfirmCallback(ctx context.Context, cb *telebot.Ca
 
 	if _, err := a.Bot.Edit(
 		cb.Message,
-		fmt.Sprintf("Your data was successfully deleted, *%s* 👍", user.ID),
+		fmt.Sprintf("Your data was successfully deleted 👍"),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 	); err != nil {
 		log.Printf("[bot] botHandleDeleteConfirmCallback() Failed to edit message: %v", err)
@@ -252,12 +263,10 @@ func (a *App) botHandleDeleteConfirmCallback(ctx context.Context, cb *telebot.Ca
 }
 
 // botHandleDeleteCancelCallback handles cancellation callback of Delete User menu.
-func (a *App) botHandleDeleteCancelCallback(ctx context.Context, cb *telebot.Callback) {
-	user := ctx.Value(BotCtxUser).(*model.Subscriber)
-
+func (a *App) botHandleDeleteCancelCallback(_ context.Context, cb *telebot.Callback) {
 	if _, err := a.Bot.Edit(
 		cb.Message,
-		fmt.Sprintf("You will not be deleted, *%s* 👍", user.ID),
+		fmt.Sprintf("Your data will not be deleted 👍"),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 	); err != nil {
 		log.Printf("[bot] botHandleDeleteCancelCallback() Failed to edit message: %v", err)
