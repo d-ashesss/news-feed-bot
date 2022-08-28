@@ -42,18 +42,16 @@ const (
 type BotMenuNoUpdatesInCategory struct {
 	Menu *telebot.ReplyMarkup
 
-	BtnCheckUpdates telebot.Btn
+	BtnBack telebot.Btn
 }
 
 func NewBotMenuNoUpdatesInCategory() *BotMenuNoUpdatesInCategory {
 	m := &BotMenuNoUpdatesInCategory{
 		Menu: &telebot.ReplyMarkup{},
 	}
-	m.BtnCheckUpdates = m.Menu.Data(BotMenuMainBtnCheckUpdatesLabel, BotMenuMainBtnCheckUpdatesID)
-	backBtn := m.Menu.Data(BotBtnBackToMainMenuLabel, BotBtnBackToMainMenuID)
+	m.BtnBack = m.Menu.Data(BotMenuCategoryNextUpdateBtnBackLabel, BotMenuMainBtnCheckUpdatesID)
 	m.Menu.Inline(
-		m.Menu.Row(m.BtnCheckUpdates),
-		m.Menu.Row(backBtn),
+		m.Menu.Row(m.BtnBack),
 	)
 	return m
 }
@@ -108,18 +106,15 @@ type BotMenuCategoryNextUpdate struct {
 
 const (
 	BotMenuCategoryNextUpdateBtnBackLabel = "⬅️ Back to categories️"
-	BotMenuCategoryNextUpdateBtnBackID    = "btnMenuCategoryNextUpdateBack"
-
 	BotMenuCategoryNextUpdateBtnNextLabel = "Next ➡️"
-	BotMenuCategoryNextUpdateBtnNextID    = "btnMenuCategoryNextUpdateNext"
 )
 
 func NewBotMenuCategoryNextUpdate(cat *model.Category) *BotMenuCategoryNextUpdate {
 	m := &BotMenuCategoryNextUpdate{
 		Menu: &telebot.ReplyMarkup{},
 	}
-	m.BtnBack = m.Menu.Data(BotMenuCategoryNextUpdateBtnBackLabel, BotMenuCategoryNextUpdateBtnBackID, cat.ID)
-	m.BtnNext = m.Menu.Data(BotMenuCategoryNextUpdateBtnNextLabel, BotMenuCategoryNextUpdateBtnNextID, cat.ID)
+	m.BtnBack = m.Menu.Data(BotMenuCategoryNextUpdateBtnBackLabel, BotMenuMainBtnCheckUpdatesID, cat.ID)
+	m.BtnNext = m.Menu.Data(BotMenuCategoryNextUpdateBtnNextLabel, BotMenuCategoryUpdatesBtnCategoryUpdatesID, cat.ID)
 	m.Menu.Inline(m.Menu.Row(m.BtnBack, m.BtnNext))
 	return m
 }
