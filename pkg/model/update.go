@@ -20,8 +20,8 @@ type Update struct {
 func (up Update) FormatMessage() string {
 	return fmt.Sprintf(
 		"*%s*\n%s",
-		up.Title,
 		up.Date.Format(time.RFC1123),
+		up.URL,
 	)
 }
 

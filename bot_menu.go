@@ -35,8 +35,8 @@ func NewBotMenuMain() *BotMenuMain {
 }
 
 const (
-	BotBtnBakcToMainMenuLabel = "⬅️ Back to main menu"
-	BotBtnBakcToMainMenuID    = "btnBackToMainMenu"
+	BotBtnBackToMainMenuLabel = "⬅️ Back to main menu"
+	BotBtnBackToMainMenuID    = "btnBackToMainMenu"
 )
 
 type BotMenuNoUpdatesInCategory struct {
@@ -50,7 +50,7 @@ func NewBotMenuNoUpdatesInCategory() *BotMenuNoUpdatesInCategory {
 		Menu: &telebot.ReplyMarkup{},
 	}
 	m.BtnCheckUpdates = m.Menu.Data(BotMenuMainBtnCheckUpdatesLabel, BotMenuMainBtnCheckUpdatesID)
-	backBtn := m.Menu.Data(BotBtnBakcToMainMenuLabel, BotBtnBakcToMainMenuID)
+	backBtn := m.Menu.Data(BotBtnBackToMainMenuLabel, BotBtnBackToMainMenuID)
 	m.Menu.Inline(
 		m.Menu.Row(m.BtnCheckUpdates),
 		m.Menu.Row(backBtn),
@@ -69,7 +69,7 @@ func NewBotMenuNoCategoriesSelected() *BotMenuNoCategoriesSelected {
 		Menu: &telebot.ReplyMarkup{},
 	}
 	m.BtnSelectCategories = m.Menu.Data(BotMenuMainBtnSelectCategoriesLabel, BotMenuMainBtnSelectCategoriesID)
-	backBtn := m.Menu.Data(BotBtnBakcToMainMenuLabel, BotBtnBakcToMainMenuID)
+	backBtn := m.Menu.Data(BotBtnBackToMainMenuLabel, BotBtnBackToMainMenuID)
 	m.Menu.Inline(
 		m.Menu.Row(m.BtnSelectCategories),
 		m.Menu.Row(backBtn),
@@ -93,7 +93,7 @@ func NewBotMenuCategoryUpdates(subs []model.Subscription) *BotMenuCategoryUpdate
 		btn := m.Menu.Data(label, BotMenuCategoryUpdatesBtnCategoryUpdatesID, sub.Category.ID)
 		rows = append(rows, m.Menu.Row(btn))
 	}
-	backBtn := m.Menu.Data(BotBtnBakcToMainMenuLabel, BotBtnBakcToMainMenuID)
+	backBtn := m.Menu.Data(BotBtnBackToMainMenuLabel, BotBtnBackToMainMenuID)
 	rows = append(rows, m.Menu.Row(backBtn))
 	m.Menu.Inline(rows...)
 	return m
@@ -102,54 +102,26 @@ func NewBotMenuCategoryUpdates(subs []model.Subscription) *BotMenuCategoryUpdate
 type BotMenuCategoryNextUpdate struct {
 	Menu *telebot.ReplyMarkup
 
+	BtnBack telebot.Btn
 	BtnNext telebot.Btn
 }
 
 const (
+	BotMenuCategoryNextUpdateBtnBackLabel = "⬅️ Back to categories️"
+	BotMenuCategoryNextUpdateBtnBackID    = "btnMenuCategoryNextUpdateBack"
+
 	BotMenuCategoryNextUpdateBtnNextLabel = "Next ➡️"
-	BotMenuCategoryNextUpdateBtnNextID    = "btnMenuCategoryNextUpdate"
+	BotMenuCategoryNextUpdateBtnNextID    = "btnMenuCategoryNextUpdateNext"
 )
 
-func NewBotMenuCategoryNextUpdate(cat *model.Category, url string) *BotMenuCategoryNextUpdate {
+func NewBotMenuCategoryNextUpdate(cat *model.Category) *BotMenuCategoryNextUpdate {
 	m := &BotMenuCategoryNextUpdate{
 		Menu: &telebot.ReplyMarkup{},
 	}
-	op := NewBotMenuUpdateURL(url)
+	m.BtnBack = m.Menu.Data(BotMenuCategoryNextUpdateBtnBackLabel, BotMenuCategoryNextUpdateBtnBackID, cat.ID)
 	m.BtnNext = m.Menu.Data(BotMenuCategoryNextUpdateBtnNextLabel, BotMenuCategoryNextUpdateBtnNextID, cat.ID)
-	m.Menu.Inline(m.Menu.Row(op.BtnOpen), m.Menu.Row(m.BtnNext))
+	m.Menu.Inline(m.Menu.Row(m.BtnBack, m.BtnNext))
 	return m
-}
-
-type BotMenuUpdateURL struct {
-	Menu *telebot.ReplyMarkup
-
-	BtnOpen telebot.Btn
-}
-
-const (
-	BotMenuUpdateURLBtnOpenLabel = "Open ↗️"
-)
-
-func NewBotMenuUpdateURL(url string) *BotMenuUpdateURL {
-	m := &BotMenuUpdateURL{
-		Menu: &telebot.ReplyMarkup{},
-	}
-	m.BtnOpen = m.Menu.URL(BotMenuUpdateURLBtnOpenLabel, url)
-	m.Menu.Inline(m.Menu.Row(m.BtnOpen))
-	return m
-}
-
-func NewUpdatedBotMenuUpdateURL(orig telebot.InlineKeyboardMarkup) *BotMenuUpdateURL {
-	for _, row := range orig.InlineKeyboard {
-		for _, btn := range row {
-			if len(btn.URL) > 0 {
-				return NewBotMenuUpdateURL(btn.URL)
-			}
-		}
-	}
-	return &BotMenuUpdateURL{
-		Menu: &telebot.ReplyMarkup{},
-	}
 }
 
 const BotMenuSelectCategoriesBtnToggleCategoryID = "btnMenuToggleCategory"
@@ -171,7 +143,7 @@ func NewBotMenuSelectCategories(subs []model.Subscription) *BotMenuSelectCategor
 		btn := m.Menu.Data(label, BotMenuSelectCategoriesBtnToggleCategoryID, sub.Category.ID)
 		rows = append(rows, m.Menu.Row(btn))
 	}
-	backBtn := m.Menu.Data(BotBtnBakcToMainMenuLabel, BotBtnBakcToMainMenuID)
+	backBtn := m.Menu.Data(BotBtnBackToMainMenuLabel, BotBtnBackToMainMenuID)
 	rows = append(rows, m.Menu.Row(backBtn))
 	m.Menu.Inline(rows...)
 	return m

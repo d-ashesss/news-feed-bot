@@ -47,7 +47,7 @@ func (a *App) SetBot(bot *bot.Bot) error {
 	a.Bot.Handle("/menu", a.botHandleMessage(botCtx, a.botHandleMenuCmd))
 	a.Bot.Handle("/delete", a.botHandleMessage(botCtx, a.botHandleDeleteCmd))
 
-	a.Bot.Handle(&telebot.Btn{Unique: BotBtnBakcToMainMenuID}, a.botHandleCallback(botCtx, a.botHandleBackToMainMenuCallback))
+	a.Bot.Handle(&telebot.Btn{Unique: BotBtnBackToMainMenuID}, a.botHandleCallback(botCtx, a.botHandleBackToMainMenuCallback))
 
 	menuMain := NewBotMenuMain()
 	a.Bot.Handle(&menuMain.BtnCheckUpdates, a.botHandleCallback(botCtx, a.botHandleCheckUpdatesCallback))
@@ -55,6 +55,7 @@ func (a *App) SetBot(bot *bot.Bot) error {
 
 	a.Bot.Handle(&telebot.Btn{Unique: BotMenuSelectCategoriesBtnToggleCategoryID}, a.botHandleCallback(botCtx, a.botHandleToggleCategoryCallback))
 	a.Bot.Handle(&telebot.Btn{Unique: BotMenuCategoryUpdatesBtnCategoryUpdatesID}, a.botHandleCallback(botCtx, a.botHandleCategoryUpdatesCallback))
+	a.Bot.Handle(&telebot.Btn{Unique: BotMenuCategoryNextUpdateBtnBackID}, a.botHandleCallback(botCtx, a.botHandleNextUpdateBackCallback))
 	a.Bot.Handle(&telebot.Btn{Unique: BotMenuCategoryNextUpdateBtnNextID}, a.botHandleCallback(botCtx, a.botHandleNextUpdateCallback))
 
 	menuDelete := NewBotMenuDelete()

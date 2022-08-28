@@ -86,6 +86,47 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 	}
 }
 
+// botHandleNextUpdateBackCallback removes the menu from previous update
+// and returns the user back to the category list.
+func (a *App) botHandleNextUpdateBackCallback(ctx context.Context, cb *telebot.Callback) {
+	if _, err := a.Bot.Edit(cb.Message, &telebot.ReplyMarkup{}); err != nil {
+		log.Printf("[bot] botHandleNextUpdateBackCallback(): Failed to remove menu from update: %v", err)
+	}
+
+	user := ctx.Value(BotCtxUser).(*model.Subscriber)
+
+	subs, err := a.SubscriptionModel.GetSubscriptionStatus(ctx, user)
+	if err != nil {
+		log.Printf("[bot] botHandleNextUpdateBackCallback(): subscription status: %v", err)
+		return
+	}
+	selectedSubs := make([]model.Subscription, 0, len(subs))
+	for _, sub := range subs {
+		if sub.Subscribed {
+			selectedSubs = append(selectedSubs, sub)
+		}
+	}
+	if len(selectedSubs) == 0 {
+		if _, err := a.Bot.Send(
+			cb.Sender,
+			fmt.Sprintf("You don't have any categories selected"),
+			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+			NewBotMenuNoCategoriesSelected().Menu,
+		); err != nil {
+			log.Printf("[bot] botHandleNextUpdateBackCallback(): Failed to edit message: %v", err)
+		}
+	} else {
+		if _, err := a.Bot.Send(
+			cb.Sender,
+			fmt.Sprintf("Unread updates in categories you've selected:"),
+			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+			NewBotMenuCategoryUpdates(selectedSubs).Menu,
+		); err != nil {
+			log.Printf("[bot] botHandleNextUpdateBackCallback(): Failed to edit message: %v", err)
+		}
+	}
+}
+
 // botHandleCheckUpdatesCallback handles request to show the list of categories available for subscription.
 func (a *App) botHandleSelectCategoriesCallback(ctx context.Context, cb *telebot.Callback) {
 	user := ctx.Value(BotCtxUser).(*model.Subscriber)
@@ -183,7 +224,7 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 		cb.Message,
 		up.FormatMessage(),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
-		NewBotMenuCategoryNextUpdate(cat, up.URL).Menu,
+		NewBotMenuCategoryNextUpdate(cat).Menu,
 	); err != nil {
 		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to show update: %v", err)
 	}
@@ -192,7 +233,7 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 // botHandleNextUpdateCallback removes the menu from previous update
 // and shows the oldest update from selected category.
 func (a *App) botHandleNextUpdateCallback(ctx context.Context, cb *telebot.Callback) {
-	if _, err := a.Bot.Edit(cb.Message, NewUpdatedBotMenuUpdateURL(cb.Message.ReplyMarkup).Menu); err != nil {
+	if _, err := a.Bot.Edit(cb.Message, &telebot.ReplyMarkup{}); err != nil {
 		log.Printf("[bot] botHandleNextUpdateCallback(): Failed to remove menu from update: %v", err)
 	}
 
@@ -225,7 +266,7 @@ func (a *App) botHandleNextUpdateCallback(ctx context.Context, cb *telebot.Callb
 		cb.Sender,
 		up.FormatMessage(),
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
-		NewBotMenuCategoryNextUpdate(cat, up.URL).Menu,
+		NewBotMenuCategoryNextUpdate(cat).Menu,
 	); err != nil {
 		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to show update: %v", err)
 	}
