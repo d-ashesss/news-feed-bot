@@ -38,7 +38,7 @@ func (a *App) botHandleMenuCmd(_ context.Context, m *telebot.Message) {
 	}
 }
 
-// botHandleMenuCmd returns user to main menu.
+// botHandleBackToMainMenuCallback returns user to main menu.
 func (a *App) botHandleBackToMainMenuCallback(_ context.Context, cb *telebot.Callback) {
 	if _, err := a.Bot.Edit(
 		cb.Message,
@@ -46,7 +46,7 @@ func (a *App) botHandleBackToMainMenuCallback(_ context.Context, cb *telebot.Cal
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 		NewBotMenuMain().Menu,
 	); err != nil {
-		log.Printf("[bot] botHandleMenuCmd() Failed to reply: %v", err)
+		log.Printf("[bot] botHandleBackToMainMenuCallback() Failed to reply: %v", err)
 	}
 }
 
@@ -127,7 +127,7 @@ func (a *App) botHandleNextUpdateBackCallback(ctx context.Context, cb *telebot.C
 	}
 }
 
-// botHandleCheckUpdatesCallback handles request to show the list of categories available for subscription.
+// botHandleSelectCategoriesCallback handles request to show the list of categories available for subscription.
 func (a *App) botHandleSelectCategoriesCallback(ctx context.Context, cb *telebot.Callback) {
 	user := ctx.Value(BotCtxUser).(*model.Subscriber)
 
@@ -241,7 +241,7 @@ func (a *App) botHandleNextUpdateCallback(ctx context.Context, cb *telebot.Callb
 
 	cat, err := a.CategoryModel.Get(ctx, cb.Data)
 	if err != nil {
-		log.Printf("[bot] botHandleCategoryUpdatesCallback(): get category: %v", err)
+		log.Printf("[bot] botHandleNextUpdateCallback(): get category: %v", err)
 		return
 	}
 
@@ -253,12 +253,12 @@ func (a *App) botHandleNextUpdateCallback(ctx context.Context, cb *telebot.Callb
 			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 			NewBotMenuNoUpdatesInCategory().Menu,
 		); err != nil {
-			log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to edit message: %v", err)
+			log.Printf("[bot] botHandleNextUpdateCallback(): Failed to edit message: %v", err)
 		}
 		return
 	}
 	if err != nil {
-		log.Printf("[bot] botHandleCategoryUpdatesCallback(): shift update: %v", err)
+		log.Printf("[bot] botHandleNextUpdateCallback(): shift update: %v", err)
 		return
 	}
 
@@ -268,7 +268,7 @@ func (a *App) botHandleNextUpdateCallback(ctx context.Context, cb *telebot.Callb
 		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 		NewBotMenuCategoryNextUpdate(cat).Menu,
 	); err != nil {
-		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to show update: %v", err)
+		log.Printf("[bot] botHandleNextUpdateCallback(): Failed to show update: %v", err)
 	}
 }
 
