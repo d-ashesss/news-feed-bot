@@ -38,6 +38,18 @@ func (a *App) botHandleMenuCmd(_ context.Context, m *telebot.Message) {
 	}
 }
 
+// botHandleMenuCmd returns user to main menu.
+func (a *App) botHandleBackToMainMenuCallback(_ context.Context, cb *telebot.Callback) {
+	if _, err := a.Bot.Edit(
+		cb.Message,
+		fmt.Sprintf("Please select the desired action:"),
+		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+		NewBotMenuMain().Menu,
+	); err != nil {
+		log.Printf("[bot] botHandleMenuCmd() Failed to reply: %v", err)
+	}
+}
+
 // botHandleCheckUpdatesCallback handles request to show unread updates.
 func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Callback) {
 	user := ctx.Value(BotCtxUser).(*model.Subscriber)
@@ -88,6 +100,7 @@ func (a *App) botHandleSelectCategoriesCallback(ctx context.Context, cb *telebot
 			cb.Message,
 			fmt.Sprintf("Unfortunately I do not have any categories available at the moment, please come back later."),
 			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+			NewBotMenuSelectCategories(subs).Menu,
 		); err != nil {
 			log.Printf("[bot] botHandleSelectCategoriesCallback(): Failed to edit message: %v", err)
 		}

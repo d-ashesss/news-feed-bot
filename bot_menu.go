@@ -34,6 +34,11 @@ func NewBotMenuMain() *BotMenuMain {
 	return m
 }
 
+const (
+	BotBtnBakcToMainMenuLabel = "⬅️ Back to main menu"
+	BotBtnBakcToMainMenuID    = "btnBackToMainMenu"
+)
+
 type BotMenuNoUpdatesInCategory struct {
 	Menu *telebot.ReplyMarkup
 
@@ -45,8 +50,10 @@ func NewBotMenuNoUpdatesInCategory() *BotMenuNoUpdatesInCategory {
 		Menu: &telebot.ReplyMarkup{},
 	}
 	m.BtnCheckUpdates = m.Menu.Data(BotMenuMainBtnCheckUpdatesLabel, BotMenuMainBtnCheckUpdatesID)
+	backBtn := m.Menu.Data(BotBtnBakcToMainMenuLabel, BotBtnBakcToMainMenuID)
 	m.Menu.Inline(
 		m.Menu.Row(m.BtnCheckUpdates),
+		m.Menu.Row(backBtn),
 	)
 	return m
 }
@@ -62,8 +69,10 @@ func NewBotMenuNoCategoriesSelected() *BotMenuNoCategoriesSelected {
 		Menu: &telebot.ReplyMarkup{},
 	}
 	m.BtnSelectCategories = m.Menu.Data(BotMenuMainBtnSelectCategoriesLabel, BotMenuMainBtnSelectCategoriesID)
+	backBtn := m.Menu.Data(BotBtnBakcToMainMenuLabel, BotBtnBakcToMainMenuID)
 	m.Menu.Inline(
 		m.Menu.Row(m.BtnSelectCategories),
+		m.Menu.Row(backBtn),
 	)
 	return m
 }
@@ -78,12 +87,14 @@ func NewBotMenuCategoryUpdates(subs []model.Subscription) *BotMenuCategoryUpdate
 	m := &BotMenuCategoryUpdates{
 		Menu: &telebot.ReplyMarkup{},
 	}
-	rows := make([]telebot.Row, 0, len(subs))
+	rows := make([]telebot.Row, 0, len(subs)+1)
 	for _, sub := range subs {
 		label := fmt.Sprintf("%s (%d)", sub.Category.Name, sub.Unread)
 		btn := m.Menu.Data(label, BotMenuCategoryUpdatesBtnCategoryUpdatesID, sub.Category.ID)
 		rows = append(rows, m.Menu.Row(btn))
 	}
+	backBtn := m.Menu.Data(BotBtnBakcToMainMenuLabel, BotBtnBakcToMainMenuID)
+	rows = append(rows, m.Menu.Row(backBtn))
 	m.Menu.Inline(rows...)
 	return m
 }
@@ -95,7 +106,7 @@ type BotMenuCategoryNextUpdate struct {
 }
 
 const (
-	BotMenuCategoryNextUpdateBtnNextLabel = "Next"
+	BotMenuCategoryNextUpdateBtnNextLabel = "Next ➡️"
 	BotMenuCategoryNextUpdateBtnNextID    = "btnMenuCategoryNextUpdate"
 )
 
@@ -116,7 +127,7 @@ type BotMenuUpdateURL struct {
 }
 
 const (
-	BotMenuUpdateURLBtnOpenLabel = "Open"
+	BotMenuUpdateURLBtnOpenLabel = "Open ↗️"
 )
 
 func NewBotMenuUpdateURL(url string) *BotMenuUpdateURL {
@@ -151,7 +162,7 @@ func NewBotMenuSelectCategories(subs []model.Subscription) *BotMenuSelectCategor
 	m := &BotMenuSelectCategories{
 		Menu: &telebot.ReplyMarkup{},
 	}
-	rows := make([]telebot.Row, 0, len(subs))
+	rows := make([]telebot.Row, 0, len(subs)+1)
 	for _, sub := range subs {
 		label := sub.Category.Name
 		if sub.Subscribed {
@@ -160,6 +171,8 @@ func NewBotMenuSelectCategories(subs []model.Subscription) *BotMenuSelectCategor
 		btn := m.Menu.Data(label, BotMenuSelectCategoriesBtnToggleCategoryID, sub.Category.ID)
 		rows = append(rows, m.Menu.Row(btn))
 	}
+	backBtn := m.Menu.Data(BotBtnBakcToMainMenuLabel, BotBtnBakcToMainMenuID)
+	rows = append(rows, m.Menu.Row(backBtn))
 	m.Menu.Inline(rows...)
 	return m
 }
