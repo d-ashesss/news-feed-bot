@@ -85,6 +85,7 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 			log.Printf("[bot] botHandleCheckUpdatesCallback(): Failed to edit message: %v", err)
 		}
 	}
+	_ = a.Bot.Respond(cb)
 }
 
 // botHandleSelectCategoriesCallback handles request to show the list of categories available for subscription.
