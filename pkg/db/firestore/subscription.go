@@ -68,8 +68,28 @@ func (m subscriptionModel) Unsubscribe(ctx context.Context, s *model.Subscriber,
 	return nil
 }
 
+func (m subscriptionModel) GetCategorySubscription(ctx context.Context, s *model.Subscriber, cat model.Category) (*model.Subscription, error) {
+	if s == nil || s.ID == "" {
+		return nil, model.ErrInvalidSubscriber
+	}
+	if cat.ID == "" {
+		return nil, model.ErrInvalidCategory
+	}
+	subscribed := s.HasCategory(cat)
+	unread, err := m.updateModel.GetCountInCategory(ctx, s, &cat)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Subscription{
+		Category:   cat,
+		Subscribed: subscribed,
+		Unread:     unread,
+	}, nil
+}
+
 func (m subscriptionModel) GetSubscriptionStatus(ctx context.Context, s *model.Subscriber) ([]model.Subscription, error) {
-	if s == nil {
+	if s == nil || s.ID == "" {
 		return nil, model.ErrInvalidSubscriber
 	}
 	cats, err := m.categoryModel.GetAll(ctx)
@@ -78,13 +98,8 @@ func (m subscriptionModel) GetSubscriptionStatus(ctx context.Context, s *model.S
 	}
 	subs := make([]model.Subscription, len(cats))
 	for i := range cats {
-		subscribed := s.HasCategory(cats[i])
-		unread, _ := m.updateModel.GetCountInCategory(ctx, s, &cats[i])
-
-		subs[i] = model.Subscription{
-			Category:   cats[i],
-			Subscribed: subscribed,
-			Unread:     unread,
+		if sub, err := m.GetCategorySubscription(ctx, s, cats[i]); err == nil {
+			subs[i] = *sub
 		}
 	}
 	return subs, nil

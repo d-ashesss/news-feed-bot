@@ -60,9 +60,11 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 		log.Printf("[bot] botHandleCheckUpdatesCallback(): subscription status: %v", err)
 		return
 	}
+	unread := 0
 	selectedSubs := make([]model.Subscription, 0, len(subs))
 	for _, sub := range subs {
 		if sub.Subscribed {
+			unread += sub.Unread
 			selectedSubs = append(selectedSubs, sub)
 		}
 	}
@@ -78,7 +80,7 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 	} else {
 		if _, err := a.Bot.Edit(
 			cb.Message,
-			fmt.Sprintf("Unread updates in categories you've selected:"),
+			fmt.Sprintf("You have in total %d unread update(s) in categories you've selected:", unread),
 			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 			NewBotMenuCategoryUpdates(selectedSubs).Menu,
 		); err != nil && !strings.Contains(err.Error(), "new message content and reply markup are exactly the same") {
@@ -156,9 +158,6 @@ func (a *App) botHandleToggleCategoryCallback(ctx context.Context, cb *telebot.C
 
 // botHandleCategoryUpdatesCallback shows the oldest update from selected category.
 func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.Callback) {
-	if err := a.Bot.Delete(cb.Message); err != nil {
-		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to delete prev message: %v", err)
-	}
 	user := ctx.Value(BotCtxUser).(*model.Subscriber)
 
 	cat, err := a.CategoryModel.Get(ctx, cb.Data)
@@ -169,14 +168,15 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 
 	up, err := a.SubscriptionModel.ShiftUpdate(ctx, user, *cat)
 	if err == model.ErrNoUpdates {
-		if _, err := a.Bot.Send(
-			cb.Sender,
+		if _, err := a.Bot.Edit(
+			cb.Message,
 			fmt.Sprintf("You don't have any updates available in category *%v*", cat.Name),
 			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 			NewBotMenuNoUpdatesInCategory().Menu,
 		); err != nil {
 			log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to edit message: %v", err)
 		}
+		_ = a.Bot.Respond(cb)
 		return
 	}
 	if err != nil {
@@ -184,6 +184,9 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 		return
 	}
 
+	if err := a.Bot.Delete(cb.Message); err != nil {
+		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to delete prev message: %v", err)
+	}
 	if _, err := a.Bot.Send(
 		cb.Sender,
 		up.FormatMessage(),
@@ -191,14 +194,32 @@ func (a *App) botHandleCategoryUpdatesCallback(ctx context.Context, cb *telebot.
 	); err != nil {
 		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to show update: %v", err)
 	}
-	if _, err := a.Bot.Send(
-		cb.Sender,
-		fmt.Sprintf("There might be more updates in category *%v*", cat.Name),
-		&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
-		NewBotMenuCategoryNextUpdate(cat).Menu,
-	); err != nil {
-		log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to show update: %v", err)
+	sub, err := a.SubscriptionModel.GetCategorySubscription(ctx, user, *cat)
+	if err != nil {
+		log.Printf("[bot] botHandleCategoryUpdatesCallback(): get status: %v", err)
+		return
 	}
+	if sub.Unread > 0 {
+		if _, err := a.Bot.Send(
+			cb.Sender,
+			fmt.Sprintf("There %d more update(s) in category *%v*", sub.Unread, cat.Name),
+			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+			NewBotMenuCategoryNextUpdate(cat).Menu,
+		); err != nil {
+			log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to show update: %v", err)
+		}
+	} else {
+		if _, err := a.Bot.Send(
+			cb.Sender,
+			fmt.Sprintf("There are no more updates available in category *%v*", cat.Name),
+			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
+			NewBotMenuNoUpdatesInCategory().Menu,
+		); err != nil {
+			log.Printf("[bot] botHandleCategoryUpdatesCallback(): Failed to edit message: %v", err)
+		}
+
+	}
+	_ = a.Bot.Respond(cb)
 }
 
 // botHandleDeleteCmd handles /delete command.

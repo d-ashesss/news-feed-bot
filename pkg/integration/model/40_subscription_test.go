@@ -70,20 +70,9 @@ func TestSubscriptionModel(t *testing.T) {
 
 			t.Run("empty subscriber", func(t *testing.T) {
 				s := &model.Subscriber{}
-				subs, err := subscriptionModel.GetSubscriptionStatus(ctx, s)
-				if err != nil {
-					t.Fatalf("GetSubscriptionStatus(%v): %v", s, err)
+				if _, err := subscriptionModel.GetSubscriptionStatus(ctx, s); err != model.ErrInvalidSubscriber {
+					t.Fatalf("GetSubscriptionStatus(%q): got %q; want ErrInvalidSubscriber", s1.UserID, err)
 				}
-				assertGetSubscriptionStatusSubscribed(t, subs, map[string]bool{
-					cat1.ID: false,
-					cat2.ID: false,
-					cat3.ID: false,
-				})
-				assertGetSubscriptionStatusUnread(t, subs, map[string]int{
-					cat1.ID: 0,
-					cat2.ID: 0,
-					cat3.ID: 0,
-				})
 			})
 
 			t.Run("valid subscriber", func(t *testing.T) {
