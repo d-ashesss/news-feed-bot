@@ -79,7 +79,11 @@ type BotMenuCategoryUpdates struct {
 	Menu *telebot.ReplyMarkup
 }
 
-const BotMenuCategoryUpdatesBtnCategoryUpdatesID = "btnMenuCategoryUpdates"
+const (
+	BotMenuCategoryUpdatesBtnCategoryUpdatesID = "btnMenuCategoryUpdates"
+
+	BotMenuCategoryUpdatesBtnRefreshLabel = "🔄 Refresh"
+)
 
 func NewBotMenuCategoryUpdates(subs []model.Subscription) *BotMenuCategoryUpdates {
 	m := &BotMenuCategoryUpdates{
@@ -92,7 +96,8 @@ func NewBotMenuCategoryUpdates(subs []model.Subscription) *BotMenuCategoryUpdate
 		rows = append(rows, m.Menu.Row(btn))
 	}
 	backBtn := m.Menu.Data(BotBtnBackToMainMenuLabel, BotBtnBackToMainMenuID)
-	rows = append(rows, m.Menu.Row(backBtn))
+	refreshBtn := m.Menu.Data(BotMenuCategoryUpdatesBtnRefreshLabel, BotMenuMainBtnCheckUpdatesID)
+	rows = append(rows, m.Menu.Row(backBtn, refreshBtn))
 	m.Menu.Inline(rows...)
 	return m
 }

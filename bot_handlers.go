@@ -6,6 +6,7 @@ import (
 	"github.com/d-ashesss/news-feed-bot/pkg/model"
 	"gopkg.in/tucnak/telebot.v2"
 	"log"
+	"strings"
 )
 
 // botHandleStartCmd handles /start command.
@@ -80,7 +81,7 @@ func (a *App) botHandleCheckUpdatesCallback(ctx context.Context, cb *telebot.Cal
 			fmt.Sprintf("Unread updates in categories you've selected:"),
 			&telebot.SendOptions{ParseMode: telebot.ModeMarkdown},
 			NewBotMenuCategoryUpdates(selectedSubs).Menu,
-		); err != nil {
+		); err != nil && !strings.Contains(err.Error(), "new message content and reply markup are exactly the same") {
 			log.Printf("[bot] botHandleCheckUpdatesCallback(): Failed to edit message: %v", err)
 		}
 	}
